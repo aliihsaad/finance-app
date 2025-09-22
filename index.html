@@ -28,62 +28,11 @@
             box-sizing: border-box;
         }
 
-        // Debug function to test login bypass
-        function debugLogin() {
-            console.log('Debug login triggered');
-            
-            // Set demo credentials directly
-            sessionToken = 'debug_session_' + Date.now();
-            userId = 'debug_user_id';
-            currentUser = 'admin';
-            useDemo = true;
-            
-            sessionStorage.setItem('session_token', sessionToken);
-            sessionStorage.setItem('user_id', userId);
-            sessionStorage.setItem('username', currentUser);
-            sessionStorage.setItem('demo_mode', 'true');
-            
-            console.log('Debug credentials set, calling showLoginSuccess');
-            showLoginSuccess();
-        }
-
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             color: #333;
-        }
-
-        /* Login Screen Styles */
-        .login-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            padding: 20px;
-        }
-
-        .login-card {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 40px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
-            border: 1px solid rgba(255,255,255,0.2);
-            width: 100%;
-            max-width: 400px;
-            text-align: center;
-        }
-
-        .login-title {
-            font-size: 2rem;
-            margin-bottom: 10px;
-            color: #667eea;
-        }
-
-        .login-subtitle {
-            color: #666;
-            margin-bottom: 30px;
         }
 
         /* Header */
@@ -93,36 +42,17 @@
             padding: 20px;
             color: white;
             border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            text-align: center;
         }
 
-        .header-content h1 {
+        .header h1 {
             font-size: 2rem;
             margin-bottom: 5px;
         }
 
-        .header-content p {
+        .header p {
             opacity: 0.9;
             font-size: 1rem;
-        }
-
-        .user-info {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            color: white;
-        }
-
-        .logout-btn {
-            background: rgba(220, 53, 69, 0.8);
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 0.9rem;
         }
 
         /* Navigation Tabs */
@@ -187,18 +117,9 @@
             margin: 20px 0;
             border-radius: 10px;
             font-weight: 600;
-        }
-
-        .connected {
-            background: rgba(25, 135, 84, 0.2);
-            color: #198754;
-            border: 2px solid #198754;
-        }
-
-        .demo-mode {
-            background: rgba(220, 53, 69, 0.2);
-            color: #dc3545;
-            border: 2px solid #dc3545;
+            background: rgba(13, 110, 253, 0.2);
+            color: #0d6efd;
+            border: 2px solid #0d6efd;
         }
 
         /* Cards */
@@ -224,19 +145,13 @@
             box-shadow: 0 12px 48px rgba(0,0,0,0.15);
         }
 
-        .card-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 20px;
-        }
-
         .card-title {
             font-size: 1.3rem;
             font-weight: 600;
             display: flex;
             align-items: center;
             gap: 10px;
+            margin-bottom: 20px;
         }
 
         /* Balance Card */
@@ -250,22 +165,6 @@
             font-weight: 700;
             margin: 10px 0;
             text-shadow: 0 2px 4px rgba(0,0,0,0.2);
-        }
-
-        .balance-breakdown {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 15px;
-            font-size: 0.9rem;
-        }
-
-        .breakdown-item {
-            text-align: center;
-        }
-
-        .breakdown-amount {
-            font-weight: 600;
-            display: block;
         }
 
         /* Forms */
@@ -318,12 +217,6 @@
             transform: translateY(0);
         }
 
-        .btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
-        }
-
         .btn-secondary {
             background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
         }
@@ -332,10 +225,6 @@
             width: auto;
             padding: 8px 16px;
             font-size: 0.9rem;
-        }
-
-        .btn-danger {
-            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
         }
 
         /* List Items */
@@ -347,11 +236,6 @@
             background: rgba(102, 126, 234, 0.1);
             border-radius: 10px;
             margin-bottom: 10px;
-        }
-
-        .list-item h4 {
-            margin: 0;
-            color: #333;
         }
 
         .list-amount {
@@ -419,15 +303,6 @@
             font-size: 1.1rem;
         }
 
-        .danger-zone {
-            background: rgba(220, 53, 69, 0.05);
-            border: 2px solid rgba(220, 53, 69, 0.2);
-        }
-
-        .danger-zone h3 {
-            color: #dc3545;
-        }
-
         /* Responsive */
         @media (max-width: 768px) {
             .nav-tabs {
@@ -448,477 +323,344 @@
             .grid {
                 grid-template-columns: 1fr;
             }
-
-            .header {
-                flex-direction: column;
-                gap: 10px;
-            }
         }
 
         @keyframes slideIn {
             from { transform: translateX(-100%); opacity: 0; }
             to { transform: translateX(0); opacity: 1; }
         }
-
-        /* Hide main app initially */
-        .main-app {
-            display: none;
-        }
-
-        .main-app.authenticated {
-            display: block;
-        }
     </style>
 </head>
 <body>
-    <!-- Login Screen -->
-    <div id="loginScreen" class="login-container">
-        <div class="login-card">
-            <div class="login-title">💰 Personal Finance</div>
-            <div class="login-subtitle">Secure Login Required</div>
-            
-            <form id="loginForm" onsubmit="handleLogin(event)">
-                <div class="input-group">
-                    <label>Username</label>
-                    <input type="text" id="username" required autocomplete="username">
-                </div>
-                <div class="input-group">
-                    <label>Password</label>
-                    <input type="password" id="password" required autocomplete="current-password">
-                </div>
-                <button type="submit" class="btn">🔐 Login</button>
-            </form>
-
-            <div style="margin-top: 20px; padding: 15px; background: rgba(13, 110, 253, 0.1); border-radius: 8px; font-size: 0.9rem;">
-                <strong>Login Credentials:</strong><br>
-                Username: admin<br>
-                Password: admin123
-            </div>
-        </div>
+    <!-- Header -->
+    <div class="header">
+        <h1>💰 Personal Finance Dashboard</h1>
+        <p>AI-Powered Financial Management</p>
     </div>
 
-    <!-- Main Application -->
-    <div id="mainApp" class="main-app">
-        <!-- Header -->
-        <div class="header">
-            <div class="header-content">
-                <h1>💰 Personal Finance Dashboard</h1>
-                <p>AI-Powered Financial Management</p>
-            </div>
-            <div class="user-info">
-                <span id="currentUser">Welcome!</span>
-                <button class="logout-btn" onclick="logout()">🚪 Logout</button>
+    <!-- Navigation Tabs -->
+    <div class="nav-tabs">
+        <button class="nav-tab active" onclick="showTab('dashboard', this)">📊 Dashboard</button>
+        <button class="nav-tab" onclick="showTab('transactions', this)">💳 Transactions</button>
+        <button class="nav-tab" onclick="showTab('buckets', this)">🪣 Buckets</button>
+        <button class="nav-tab" onclick="showTab('debts', this)">💳 Debts</button>
+        <button class="nav-tab" onclick="showTab('accounts', this)">🏦 Accounts</button>
+        <button class="nav-tab" onclick="showTab('reports', this)">📈 Reports</button>
+        <button class="nav-tab" onclick="showTab('settings', this)">⚙️ Settings</button>
+    </div>
+
+    <div class="container">
+        <!-- Connection Status -->
+        <div id="connectionStatus" class="connection-status">
+            🎯 Demo Mode - Sample Financial Data
+        </div>
+
+        <!-- Dashboard Tab -->
+        <div id="dashboard" class="tab-content active">
+            <div class="grid">
+                <!-- Balance Overview -->
+                <div class="card balance-card">
+                    <div class="card-title">
+                        <span>🏦 Account Balance</span>
+                    </div>
+                    <div class="balance-amount" id="totalBalance">€1,924.50</div>
+                    <div style="display: flex; justify-content: space-between; margin-top: 15px; font-size: 0.9rem;">
+                        <div style="text-align: center;">
+                            <span style="font-weight: 600; display: block;">€1,000.00</span>
+                            <div>Allocated</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <span style="font-weight: 600; display: block;">€924.50</span>
+                            <div>Available</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="card">
+                    <div class="card-title">
+                        <span>⚡ Quick Actions</span>
+                    </div>
+                    <div class="input-group">
+                        <label>Amount (€)</label>
+                        <input type="number" id="quickAmount" placeholder="25.50" step="0.01">
+                    </div>
+                    <div class="input-group">
+                        <label>Description</label>
+                        <input type="text" id="quickDescription" placeholder="Coffee at Starbucks">
+                    </div>
+                    <div class="input-group">
+                        <label>Category</label>
+                        <select id="quickCategory">
+                            <option value="Food">🍕 Food</option>
+                            <option value="Transport">🚗 Transport</option>
+                            <option value="Bills">📄 Bills</option>
+                            <option value="Entertainment">🎬 Entertainment</option>
+                            <option value="Shopping">🛍️ Shopping</option>
+                            <option value="Healthcare">🏥 Healthcare</option>
+                            <option value="Other">📦 Other</option>
+                        </select>
+                    </div>
+                    <button class="btn" onclick="addExpense()">Add Expense</button>
+                    <button class="btn btn-secondary" onclick="addIncome()" style="margin-top: 10px;">Add Income</button>
+                </div>
+
+                <!-- Monthly Spending -->
+                <div class="card">
+                    <div class="card-title">
+                        <span>📊 Monthly Spending</span>
+                        <button class="btn btn-small" onclick="refreshSpending()">↻</button>
+                    </div>
+                    <div id="spendingContainer">
+                        <div class="list-item">
+                            <div><span style="margin-right: 8px;">🚨</span><strong>Entertainment</strong></div>
+                            <div class="list-amount">€80.00 / €80.00<br><small>(100%)</small></div>
+                        </div>
+                        <div class="list-item">
+                            <div><span style="margin-right: 8px;">✅</span><strong>Food</strong></div>
+                            <div class="list-amount">€125.50 / €250.00<br><small>(50.2%)</small></div>
+                        </div>
+                        <div class="list-item">
+                            <div><span style="margin-right: 8px;">✅</span><strong>Transport</strong></div>
+                            <div class="list-amount">€45.00 / €120.00<br><small>(37.5%)</small></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Alerts -->
+                <div class="card">
+                    <div class="card-title">
+                        <span>🔔 Active Alerts</span>
+                    </div>
+                    <div style="padding: 15px; background: rgba(245, 87, 108, 0.1); border-left: 4px solid #f5576c; border-radius: 0 8px 8px 0;">
+                        <div style="font-weight: 600; margin-bottom: 5px; color: #d63384;">🚨 Budget Alert: Entertainment</div>
+                        <div style="font-size: 0.9rem; color: #666;">You've spent €80.00/€80.00 (100%) of your Entertainment budget this month.</div>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <!-- Navigation Tabs -->
-        <div class="nav-tabs">
-            <button class="nav-tab active" onclick="showTab('dashboard', this)">📊 Dashboard</button>
-            <button class="nav-tab" onclick="showTab('transactions', this)">💳 Transactions</button>
-            <button class="nav-tab" onclick="showTab('buckets', this)">🪣 Buckets</button>
-            <button class="nav-tab" onclick="showTab('debts', this)">💳 Debts</button>
-            <button class="nav-tab" onclick="showTab('accounts', this)">🏦 Accounts</button>
-            <button class="nav-tab" onclick="showTab('reports', this)">📈 Reports</button>
-            <button class="nav-tab" onclick="showTab('settings', this)">⚙️ Settings</button>
+        <!-- Transactions Tab -->
+        <div id="transactions" class="tab-content">
+            <div class="grid">
+                <!-- AI Expense Entry -->
+                <div class="card">
+                    <div class="card-title">
+                        <span>🤖 AI-Powered Expense Entry</span>
+                    </div>
+                    <div class="input-group">
+                        <label>Natural Language Input</label>
+                        <textarea id="aiExpenseInput" placeholder="Try: 'I spent 23.50 on coffee at Starbucks this morning'" rows="2"></textarea>
+                    </div>
+                    <button class="btn" onclick="processAIExpense()">🤖 Parse with AI</button>
+                </div>
+
+                <!-- AI Assistant -->
+                <div class="card">
+                    <div class="card-title">
+                        <span>💡 AI Financial Assistant</span>
+                    </div>
+                    <div class="input-group">
+                        <label>Ask your AI assistant</label>
+                        <textarea id="aiQuestion" placeholder="How much can I spend on entertainment this month?" rows="2"></textarea>
+                    </div>
+                    <button class="btn" onclick="askAIAssistant()">🤖 Ask AI</button>
+                    <div id="aiResponse" style="margin-top: 15px; padding: 15px; background: rgba(102, 126, 234, 0.1); border-radius: 8px; display: none;">
+                        <div style="font-weight: 600; margin-bottom: 10px;">🤖 AI Response:</div>
+                        <div id="aiResponseText"></div>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <div class="container">
-            <!-- Connection Status -->
-            <div id="connectionStatus" class="connection-status demo-mode">
-                🔄 Connecting to Supabase...
-            </div>
-
-            <!-- Dashboard Tab -->
-            <div id="dashboard" class="tab-content active">
-                <div class="grid">
-                    <!-- Balance Overview -->
-                    <div class="card balance-card">
-                        <div class="card-title">
-                            <span>🏦 Account Balance</span>
-                        </div>
-                        <div class="balance-amount" id="totalBalance">€0.00</div>
-                        <div class="balance-breakdown">
-                            <div class="breakdown-item">
-                                <span class="breakdown-amount" id="allocatedAmount">€0.00</span>
-                                <div>Allocated</div>
-                            </div>
-                            <div class="breakdown-item">
-                                <span class="breakdown-amount" id="unallocatedAmount">€0.00</span>
-                                <div>Available</div>
-                            </div>
-                        </div>
+        <!-- Buckets Tab -->
+        <div id="buckets" class="tab-content">
+            <div class="grid">
+                <div class="card">
+                    <div class="card-title">
+                        <span>🪣 Bucket Overview</span>
                     </div>
-
-                    <!-- Quick Actions -->
-                    <div class="card">
-                        <div class="card-title">
-                            <span>⚡ Quick Actions</span>
+                    <div class="list-item">
+                        <div>
+                            <h4>🔴 Emergency Fund</h4>
+                            <div class="progress-bar"><div class="progress-fill" style="width: 20%"></div></div>
                         </div>
-                        <div class="input-group">
-                            <label>Amount (€)</label>
-                            <input type="number" id="quickAmount" placeholder="25.50" step="0.01">
-                        </div>
-                        <div class="input-group">
-                            <label>Description</label>
-                            <input type="text" id="quickDescription" placeholder="Coffee at Starbucks">
-                        </div>
-                        <div class="input-group">
-                            <label>Category</label>
-                            <select id="quickCategory">
-                                <option value="Food">🍕 Food</option>
-                                <option value="Transport">🚗 Transport</option>
-                                <option value="Bills">📄 Bills</option>
-                                <option value="Entertainment">🎬 Entertainment</option>
-                                <option value="Shopping">🛍️ Shopping</option>
-                                <option value="Healthcare">🏥 Healthcare</option>
-                                <option value="Other">📦 Other</option>
-                            </select>
-                        </div>
-                        <button class="btn" onclick="addExpense()">Add Expense</button>
-                        <button class="btn btn-secondary" onclick="addIncome()" style="margin-top: 10px;">Add Income</button>
+                        <div class="list-amount">€500.00 / €2,500.00<br><small>(20%)</small></div>
                     </div>
-
-                    <!-- Monthly Spending -->
-                    <div class="card">
-                        <div class="card-title">
-                            <span>📊 Monthly Spending</span>
-                            <button class="btn btn-small" onclick="refreshSpending()">↻</button>
+                    <div class="list-item">
+                        <div>
+                            <h4>🔴 Flexible Buffer</h4>
+                            <div class="progress-bar"><div class="progress-fill" style="width: 37.5%"></div></div>
                         </div>
-                        <div id="spendingContainer">
-                            <div class="loading">Loading spending data...</div>
-                        </div>
-                    </div>
-
-                    <!-- Recent Alerts -->
-                    <div class="card">
-                        <div class="card-title">
-                            <span>🔔 Active Alerts</span>
-                            <button class="btn btn-small" onclick="checkAlerts()">Check</button>
-                        </div>
-                        <div id="alertsContainer">
-                            <div class="loading">Loading alerts...</div>
-                        </div>
+                        <div class="list-amount">€150.00 / €400.00<br><small>(37.5%)</small></div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Transactions Tab -->
-            <div id="transactions" class="tab-content">
-                <div class="grid">
-                    <!-- AI Expense Entry -->
-                    <div class="card">
-                        <div class="card-title">
-                            <span>🤖 AI-Powered Expense Entry</span>
-                        </div>
-                        <div class="input-group">
-                            <label>Natural Language Input</label>
-                            <textarea id="aiExpenseInput" placeholder="Try: 'I spent 23.50 on coffee at Starbucks this morning'" rows="2"></textarea>
-                        </div>
-                        <button class="btn" onclick="processAIExpense()">🤖 Parse with AI</button>
-                    </div>
-
-                    <!-- AI Assistant -->
-                    <div class="card">
-                        <div class="card-title">
-                            <span>💡 AI Financial Assistant</span>
-                        </div>
-                        <div class="input-group">
-                            <label>Ask your AI assistant</label>
-                            <textarea id="aiQuestion" placeholder="How much can I spend on entertainment this month?" rows="2"></textarea>
-                        </div>
-                        <button class="btn" onclick="askAIAssistant()">🤖 Ask AI</button>
-                        <div id="aiResponse" style="margin-top: 15px; padding: 15px; background: rgba(102, 126, 234, 0.1); border-radius: 8px; display: none;">
-                            <div class="card-title" style="margin-bottom: 10px;">
-                                <span>🤖 AI Response:</span>
-                            </div>
-                            <div id="aiResponseText"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Buckets Tab -->
-            <div id="buckets" class="tab-content">
-                <div class="grid">
-                    <!-- Buckets Overview -->
-                    <div class="card">
-                        <div class="card-title">
-                            <span>🪣 Bucket Overview</span>
-                            <button class="btn btn-small" onclick="refreshBuckets()">↻</button>
-                        </div>
-                        <div id="bucketsContainer">
-                            <div class="loading">Loading buckets...</div>
-                        </div>
-                    </div>
-
-                    <!-- Bucket Allocation -->
-                    <div class="card">
-                        <div class="card-title">
-                            <span>💰 Allocate to Bucket</span>
-                        </div>
-                        <div class="input-group">
-                            <label>Bucket</label>
-                            <select id="bucketSelect">
-                                <option value="Emergency Fund">🚨 Emergency Fund</option>
-                                <option value="Flexible Buffer">🎯 Flexible Buffer</option>
-                                <option value="Yearly Payments">📅 Yearly Payments</option>
-                                <option value="Quarterly Payments">📊 Quarterly Payments</option>
-                                <option value="Fun Money">🎉 Fun Money</option>
-                            </select>
-                        </div>
-                        <div class="input-group">
-                            <label>Amount (€)</label>
-                            <input type="number" id="bucketAmount" placeholder="100.00" step="0.01">
-                        </div>
-                        <div class="input-group">
-                            <label>Description</label>
-                            <input type="text" id="bucketDescription" placeholder="Monthly savings">
-                        </div>
-                        <button class="btn" onclick="allocateToBucket()">Allocate Money</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Debts Tab -->
-            <div id="debts" class="tab-content">
-                <div class="grid">
-                    <!-- Debt Overview -->
-                    <div class="card">
-                        <div class="card-title">
-                            <span>💳 Debt Management</span>
-                        </div>
-                        <div id="debtSummaryContainer">
-                            <div class="loading">Loading debts...</div>
-                        </div>
-                    </div>
-
-                    <!-- Make Payment -->
-                    <div class="card">
-                        <div class="card-title">
-                            <span>💰 Make Payment</span>
-                        </div>
-                        <div class="input-group">
-                            <label>Select Debt</label>
-                            <select id="debtSelect">
-                                <option value="">Select a debt...</option>
-                            </select>
-                        </div>
-                        <div class="input-group">
-                            <label>Payment Amount (€)</label>
-                            <input type="number" id="debtPaymentAmount" placeholder="100.00" step="0.01">
-                        </div>
-                        <button class="btn" onclick="makeDebtPayment()">💳 Pay Debt</button>
-                    </div>
-
-                    <!-- Add New Debt -->
-                    <div class="card">
-                        <div class="card-title">
-                            <span>➕ Add New Debt</span>
-                        </div>
-                        <div class="input-group">
-                            <label>Debt Name</label>
-                            <input type="text" id="newDebtName" placeholder="Credit Card, Car Loan, etc.">
-                        </div>
-                        <div class="input-group">
-                            <label>Total Amount (€)</label>
-                            <input type="number" id="newDebtTotal" placeholder="5000.00" step="0.01">
-                        </div>
-                        <div class="input-group">
-                            <label>Current Balance (€)</label>
-                            <input type="number" id="newDebtBalance" placeholder="2500.00" step="0.01">
-                        </div>
-                        <div class="input-group">
-                            <label>Minimum Payment (€)</label>
-                            <input type="number" id="newDebtMinPayment" placeholder="150.00" step="0.01">
-                        </div>
-                        <div class="input-group">
-                            <label>Due Day (1-31)</label>
-                            <input type="number" id="newDebtDueDay" placeholder="15" min="1" max="31">
-                        </div>
-                        <div class="input-group">
-                            <label>Interest Rate (%)</label>
-                            <input type="number" id="newDebtInterest" placeholder="18.5" step="0.1">
-                        </div>
-                        <button class="btn" onclick="addNewDebt()">➕ Add Debt</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Accounts Tab -->
-            <div id="accounts" class="tab-content">
-                <div class="grid">
-                    <!-- Account Overview -->
-                    <div class="card">
-                        <div class="card-title">
-                            <span>🏦 All Accounts</span>
-                            <button class="btn btn-small" onclick="refreshAccounts()">↻</button>
-                        </div>
-                        <div id="accountsContainer">
-                            <div class="loading">Loading accounts...</div>
-                        </div>
-                    </div>
-
-                    <!-- Add New Account -->
-                    <div class="card">
-                        <div class="card-title">
-                            <span>➕ Add New Account</span>
-                        </div>
-                        <div class="input-group">
-                            <label>Account Name</label>
-                            <input type="text" id="newAccountName" placeholder="Savings Account, Credit Card, etc.">
-                        </div>
-                        <div class="input-group">
-                            <label>Account Type</label>
-                            <select id="newAccountType">
-                                <option value="checking">Checking Account</option>
-                                <option value="savings">Savings Account</option>
-                                <option value="credit">Credit Card</option>
-                                <option value="cash">Cash</option>
-                                <option value="investment">Investment</option>
-                            </select>
-                        </div>
-                        <div class="input-group">
-                            <label>Initial Balance (€)</label>
-                            <input type="number" id="newAccountBalance" placeholder="0.00" step="0.01">
-                        </div>
-                        <button class="btn" onclick="addNewAccount()">➕ Add Account</button>
-                    </div>
-
-                    <!-- Category Management -->
-                    <div class="card">
-                        <div class="card-title">
-                            <span>📂 Category Management</span>
-                        </div>
-                        <div class="input-group">
-                            <label>New Category Name</label>
-                            <input type="text" id="newCategoryName" placeholder="Travel, Education, etc.">
-                        </div>
-                        <div class="input-group">
-                            <label>Default Budget Limit (€)</label>
-                            <input type="number" id="newCategoryBudget" placeholder="100.00" step="0.01">
-                        </div>
-                        <button class="btn" onclick="addNewCategory()">➕ Add Category</button>
-                        
-                        <div style="margin-top: 20px;">
-                            <h4>Existing Categories:</h4>
-                            <div id="categoriesContainer">
-                                <div class="loading">Loading categories...</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Reports Tab -->
-            <div id="reports" class="tab-content">
-                <div class="grid">
-                    <!-- AI Budget Insights -->
-                    <div class="card">
-                        <div class="card-title">
-                            <span>📊 AI Budget Insights</span>
-                            <button class="btn btn-small" onclick="getAIInsights()">🤖 Analyze</button>
-                        </div>
-                        <div id="aiInsights">
-                            <div class="loading">Click "Analyze" to get AI-powered budget insights</div>
-                        </div>
-                    </div>
-
-                    <!-- Monthly Report -->
-                    <div class="card">
-                        <div class="card-title">
-                            <span>📈 Monthly Report</span>
-                        </div>
-                        <div class="input-group">
-                            <label>Select Month</label>
-                            <select id="reportMonth">
-                                <option value="current">Current Month</option>
-                                <option value="previous">Previous Month</option>
-                            </select>
-                        </div>
-                        <button class="btn" onclick="generateReport()">Generate Report</button>
-                        <div id="monthlyReport" style="margin-top: 15px;"></div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Settings Tab -->
-            <div id="settings" class="tab-content">
-                <!-- Security Settings -->
-                <div class="settings-section">
-                    <h3>🔐 Security Settings</h3>
-                    <div class="input-group">
-                        <label>Change Password</label>
-                        <input type="password" id="newPassword" placeholder="Enter new password">
+                <div class="card">
+                    <div class="card-title">
+                        <span>💰 Allocate to Bucket</span>
                     </div>
                     <div class="input-group">
-                        <label>Confirm Password</label>
-                        <input type="password" id="confirmPassword" placeholder="Confirm new password">
+                        <label>Bucket</label>
+                        <select id="bucketSelect">
+                            <option value="Emergency Fund">🚨 Emergency Fund</option>
+                            <option value="Flexible Buffer">🎯 Flexible Buffer</option>
+                            <option value="Yearly Payments">📅 Yearly Payments</option>
+                        </select>
                     </div>
-                    <button class="btn" onclick="changePassword()">🔑 Change Password</button>
-                </div>
-
-                <!-- AI Configuration -->
-                <div class="settings-section">
-                    <h3>🤖 AI Configuration</h3>
                     <div class="input-group">
-                        <label>OpenAI API Key</label>
-                        <input type="password" id="openaiApiKey" placeholder="sk-proj-..." value="">
-                        <small style="color: #666; font-size: 0.9rem;">Get your key from: <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com</a></small>
+                        <label>Amount (€)</label>
+                        <input type="number" id="bucketAmount" placeholder="100.00" step="0.01">
                     </div>
-                    <button class="btn" onclick="saveOpenAIKey()">💾 Save API Key (Encrypted)</button>
-                    <button class="btn btn-secondary" onclick="testAI()" style="margin-top: 10px;">🧪 Test AI</button>
-                </div>
-
-                <!-- Account Management -->
-                <div class="settings-section">
-                    <h3>🏦 Account Management</h3>
-                    <div class="input-group">
-                        <label>Set Main Account Balance</label>
-                        <input type="number" id="setBalance" placeholder="1500.00" step="0.01">
-                    </div>
-                    <button class="btn" onclick="updateMainBalance()">💰 Update Balance</button>
-                </div>
-
-                <!-- Budget Settings -->
-                <div class="settings-section">
-                    <h3>📊 Budget Settings</h3>
-                    <div id="budgetSettings">
-                        <div class="loading">Loading categories...</div>
-                    </div>
-                    <button class="btn" onclick="saveBudgetSettings()">💾 Save Budgets</button>
-                </div>
-
-                <!-- Data Management -->
-                <div class="settings-section">
-                    <h3>📁 Data Management</h3>
-                    <button class="btn btn-secondary" onclick="exportData()">📤 Export Data</button>
-                    <button class="btn btn-secondary" onclick="importData()" style="margin-top: 10px;">📥 Import Data</button>
-                    <input type="file" id="importFile" accept=".json" style="display: none;" onchange="handleImport(event)">
-                </div>
-
-                <!-- Session Management -->
-                <div class="settings-section">
-                    <h3>🕒 Session Management</h3>
-                    <div id="sessionInfo">
-                        <div class="loading">Loading session info...</div>
-                    </div>
-                    <button class="btn btn-secondary" onclick="viewActiveSessions()">👀 View Active Sessions</button>
-                    <button class="btn btn-danger" onclick="logoutAllSessions()" style="margin-top: 10px;">🚪 Logout All Sessions</button>
-                </div>
-
-                <!-- Danger Zone -->
-                <div class="settings-section danger-zone">
-                    <h3>⚠️ Danger Zone</h3>
-                    <p style="margin-bottom: 15px; color: #666;">These actions cannot be undone!</p>
-                    <button class="btn btn-danger" onclick="resetAllBudgets()">🔄 Reset All Budgets</button>
-                    <button class="btn btn-danger" onclick="deleteAllTransactions()" style="margin-top: 10px;">💥 Delete All Transactions</button>
-                    <button class="btn btn-danger" onclick="factoryReset()" style="margin-top: 10px;">🏭 Factory Reset</button>
+                    <button class="btn" onclick="allocateToBucket()">Allocate Money</button>
                 </div>
             </div>
-
-            <!-- Message Container -->
-            <div id="messageContainer"></div>
         </div>
+
+        <!-- Debts Tab -->
+        <div id="debts" class="tab-content">
+            <div class="grid">
+                <div class="card">
+                    <div class="card-title">
+                        <span>💳 Debt Management</span>
+                    </div>
+                    <div class="list-item" style="background: rgba(220, 53, 69, 0.1);">
+                        <div>
+                            <strong>💳 Credit Card</strong>
+                            <br><small>Due: 25th • Min: €150</small>
+                        </div>
+                        <div style="color: #dc3545; text-align: right; font-weight: 600;">
+                            €1,850
+                            <br><small>(~12.3 months)</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">
+                        <span>➕ Add New Debt</span>
+                    </div>
+                    <div class="input-group">
+                        <label>Debt Name</label>
+                        <input type="text" placeholder="Car Loan, etc.">
+                    </div>
+                    <div class="input-group">
+                        <label>Current Balance (€)</label>
+                        <input type="number" placeholder="2500.00" step="0.01">
+                    </div>
+                    <button class="btn" onclick="addNewDebt()">➕ Add Debt</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Accounts Tab -->
+        <div id="accounts" class="tab-content">
+            <div class="grid">
+                <div class="card">
+                    <div class="card-title">
+                        <span>🏦 All Accounts</span>
+                    </div>
+                    <div class="list-item">
+                        <div><h4>🏦 Main Account</h4><small>Checking</small></div>
+                        <div class="list-amount">€1,924.50</div>
+                    </div>
+                    <div class="list-item">
+                        <div><h4>💰 Savings</h4><small>Savings</small></div>
+                        <div class="list-amount">€5,000.00</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">
+                        <span>➕ Add New Account</span>
+                    </div>
+                    <div class="input-group">
+                        <label>Account Name</label>
+                        <input type="text" placeholder="Investment Account">
+                    </div>
+                    <div class="input-group">
+                        <label>Account Type</label>
+                        <select>
+                            <option value="checking">Checking</option>
+                            <option value="savings">Savings</option>
+                            <option value="investment">Investment</option>
+                        </select>
+                    </div>
+                    <button class="btn" onclick="addNewAccount()">➕ Add Account</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reports Tab -->
+        <div id="reports" class="tab-content">
+            <div class="grid">
+                <div class="card">
+                    <div class="card-title">
+                        <span>📊 AI Budget Insights</span>
+                        <button class="btn btn-small" onclick="getAIInsights()">🤖 Analyze</button>
+                    </div>
+                    <div id="aiInsights">
+                        <div class="loading">Click "Analyze" to get AI-powered budget insights</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">
+                        <span>📈 Monthly Report</span>
+                    </div>
+                    <div class="input-group">
+                        <label>Select Month</label>
+                        <select>
+                            <option value="current">Current Month</option>
+                            <option value="previous">Previous Month</option>
+                        </select>
+                    </div>
+                    <button class="btn" onclick="generateReport()">Generate Report</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Tab -->
+        <div id="settings" class="tab-content">
+            <!-- AI Configuration -->
+            <div class="settings-section">
+                <h3>🤖 AI Configuration</h3>
+                <div class="input-group">
+                    <label>OpenAI API Key</label>
+                    <input type="password" id="openaiApiKey" placeholder="sk-proj-...">
+                    <small style="color: #666; font-size: 0.9rem;">Get your key from: <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com</a></small>
+                </div>
+                <button class="btn" onclick="saveOpenAIKey()">💾 Save API Key</button>
+                <button class="btn btn-secondary" onclick="testAI()" style="margin-top: 10px;">🧪 Test AI</button>
+            </div>
+
+            <!-- Budget Settings -->
+            <div class="settings-section">
+                <h3>📊 Budget Settings</h3>
+                <div class="input-group">
+                    <label>Food Budget</label>
+                    <input type="number" value="250" step="0.01">
+                </div>
+                <div class="input-group">
+                    <label>Entertainment Budget</label>
+                    <input type="number" value="80" step="0.01">
+                </div>
+                <button class="btn" onclick="saveBudgetSettings()">💾 Save Budgets</button>
+            </div>
+
+            <!-- PWA Status -->
+            <div class="settings-section">
+                <h3>📱 PWA Status</h3>
+                <div style="padding: 10px; background: rgba(0,0,0,0.05); border-radius: 5px; margin-bottom: 15px;">
+                    <div><strong>Installation Status:</strong> <span id="installStatus">Running in browser</span></div>
+                    <div><strong>Last Updated:</strong> <span id="lastUpdated">${new Date().toLocaleString()}</span></div>
+                </div>
+                <button class="btn btn-secondary" onclick="checkForUpdates()">🔄 Check Updates</button>
+            </div>
+        </div>
+
+        <!-- Message Container -->
+        <div id="messageContainer"></div>
     </div>
 
     <script>
@@ -926,328 +668,12 @@
         const SUPABASE_URL = 'https://fbbsfxcftgoetfvnjevt.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZiYnNmeGNmdGdvZXRmdm5qZXZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc4NTM3MzksImV4cCI6MjA3MzQyOTczOX0.SgVG5AAJTcMC8wRJBvIjAibGc6oO126Wj6nK-XALvxY';
         
-        // Session management
-        let currentUser = null;
-        let sessionToken = null;
-        let userId = null;
-        let isConnected = false;
-        let useDemo = false;
-
-        // Security Functions
-        function handleLogin(event) {
-            event.preventDefault();
-            console.log('Login form submitted'); // Debug log
-            login();
-        }
-
-        async function login() {
-            console.log('Login function started'); // Debug log
-            
-            const username = document.getElementById('username').value.trim();
-            const password = document.getElementById('password').value;
-
-            console.log('Username:', username, 'Password length:', password.length); // Debug log
-
-            if (!username || !password) {
-                showMessage('Please enter both username and password', 'error');
-                return;
-            }
-
-            // Show loading state
-            const loginBtn = document.querySelector('button[type="submit"]');
-            const originalText = loginBtn.innerHTML;
-            loginBtn.innerHTML = 'Logging in...';
-            loginBtn.disabled = true;
-
-            try {
-                console.log('Attempting login...'); // Debug log
-                
-                // For debugging, let's bypass the complex auth and just check credentials
-                if (username === 'admin' && password === 'admin123') {
-                    console.log('Credentials match admin account'); // Debug log
-                    
-                    // Set session data
-                    sessionToken = 'demo_session_' + Date.now();
-                    userId = 'demo_user_id';
-                    currentUser = 'admin';
-                    useDemo = true;
-                    
-                    // Store in session storage
-                    sessionStorage.setItem('session_token', sessionToken);
-                    sessionStorage.setItem('user_id', userId);
-                    sessionStorage.setItem('username', currentUser);
-                    sessionStorage.setItem('demo_mode', 'true');
-                    
-                    console.log('Session data set, calling showLoginSuccess'); // Debug log
-                    showLoginSuccess();
-                    return;
-                }
-
-                // If not admin credentials, try database authentication
-                console.log('Trying database authentication...'); // Debug log
-                
-                try {
-                    const result = await callFunction('login_user', {
-                        p_username: username,
-                        p_password: password,
-                        p_ip_address: await getClientIP(),
-                        p_user_agent: navigator.userAgent
-                    });
-
-                    console.log('Database auth result:', result); // Debug log
-
-                    if (result && result.success) {
-                        sessionToken = result.session_token;
-                        userId = result.user_id;
-                        currentUser = result.username;
-                        
-                        sessionStorage.setItem('session_token', sessionToken);
-                        sessionStorage.setItem('user_id', userId);
-                        sessionStorage.setItem('username', currentUser);
-                        
-                        showLoginSuccess();
-                        return;
-                    }
-                } catch (dbError) {
-                    console.log('Database auth failed:', dbError); // Debug log
-                }
-
-                showMessage('Invalid credentials', 'error');
-
-            } catch (error) {
-                console.error('Login error:', error);
-                showMessage('Login failed. Please try again.', 'error');
-            } finally {
-                loginBtn.innerHTML = originalText;
-                loginBtn.disabled = false;
-            }
-        }
-
-        // Direct authentication fallback
-        async function authenticateDirectly(username, password) {
-            try {
-                // Hash password client-side to match server
-                const hashedPassword = await hashPassword(password);
-                
-                // Check user credentials directly
-                const response = await fetch(`${SUPABASE_URL}/rest/v1/app_users?username=eq.${username}&password_hash=eq.${hashedPassword}&is_active=eq.true&select=id,username`, {
-                    method: 'GET',
-                    headers: {
-                        'apikey': SUPABASE_KEY,
-                        'Authorization': `Bearer ${SUPABASE_KEY}`,
-                        'Accept': 'application/json'
-                    },
-                    mode: 'cors'
-                });
-
-                if (response.ok) {
-                    const users = await response.json();
-                    if (users && users.length > 0) {
-                        const user = users[0];
-                        
-                        // Create session manually
-                        const sessionToken = generateSessionToken();
-                        const sessionResponse = await fetch(`${SUPABASE_URL}/rest/v1/user_sessions`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'apikey': SUPABASE_KEY,
-                                'Authorization': `Bearer ${SUPABASE_KEY}`,
-                                'Prefer': 'return=minimal'
-                            },
-                            body: JSON.stringify({
-                                user_id: user.id,
-                                session_token: sessionToken,
-                                expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-                                ip_address: await getClientIP(),
-                                user_agent: navigator.userAgent
-                            })
-                        });
-
-                        if (sessionResponse.ok) {
-                            return {
-                                success: true,
-                                session_token: sessionToken,
-                                user_id: user.id,
-                                username: user.username
-                            };
-                        }
-                    }
-                }
-            } catch (error) {
-                console.error('Direct auth error:', error);
-            }
-            
-            return { success: false };
-        }
-
-        function generateSessionToken() {
-            const array = new Uint8Array(32);
-            crypto.getRandomValues(array);
-            return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
-        }
-
-        async function logout() {
-            if (sessionToken) {
-                try {
-                    await callFunction('logout_user', { p_session_token: sessionToken });
-                } catch (error) {
-                    console.error('Logout error:', error);
-                }
-            }
-            
-            // Clear session data
-            sessionStorage.clear();
-            sessionToken = null;
-            userId = null;
-            currentUser = null;
-            
-            // Show login screen
-            document.getElementById('loginScreen').style.display = 'flex';
-            document.getElementById('mainApp').classList.remove('authenticated');
-            
-            showMessage('Logged out successfully', 'info');
-        }
-
-        async function changePassword() {
-            const newPassword = document.getElementById('newPassword').value;
-            const confirmPassword = document.getElementById('confirmPassword').value;
-
-            if (!newPassword || !confirmPassword) {
-                showMessage('Please fill in both password fields', 'error');
-                return;
-            }
-
-            if (newPassword !== confirmPassword) {
-                showMessage('Passwords do not match', 'error');
-                return;
-            }
-
-            if (newPassword.length < 6) {
-                showMessage('Password must be at least 6 characters long', 'error');
-                return;
-            }
-
-            try {
-                const hashedPassword = await hashPassword(newPassword);
-                
-                const response = await fetch(`${SUPABASE_URL}/rest/v1/app_users?id=eq.${userId}`, {
-                    method: 'PATCH',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'apikey': SUPABASE_KEY,
-                        'Authorization': `Bearer ${SUPABASE_KEY}`
-                    },
-                    body: JSON.stringify({ password_hash: hashedPassword })
-                });
-
-                if (response.ok) {
-                    showMessage('Password changed successfully', 'success');
-                    document.getElementById('newPassword').value = '';
-                    document.getElementById('confirmPassword').value = '';
-                } else {
-                    showMessage('Failed to change password', 'error');
-                }
-            } catch (error) {
-                showMessage('Error changing password', 'error');
-            }
-        }
-
-        async function hashPassword(password) {
-            const encoder = new TextEncoder();
-            const data = encoder.encode(password + 'salt_key_2025');
-            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-            const hashArray = Array.from(new Uint8Array(hashBuffer));
-            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-        }
-
-        async function validateSession() {
-            const token = sessionStorage.getItem('session_token');
-            const storedUserId = sessionStorage.getItem('user_id');
-            const storedUsername = sessionStorage.getItem('username');
-            const demoMode = sessionStorage.getItem('demo_mode');
-            
-            if (!token) return false;
-
-            // Handle demo mode
-            if (demoMode === 'true' || token.startsWith('demo_session_')) {
-                sessionToken = token;
-                userId = storedUserId;
-                currentUser = storedUsername;
-                useDemo = true;
-                return true;
-            }
-
-            try {
-                const result = await callFunction('validate_session', { p_session_token: token });
-                
-                if (result && result.valid) {
-                    sessionToken = token;
-                    userId = result.user_id;
-                    currentUser = result.username;
-                    useDemo = false;
-                    return true;
-                }
-            } catch (error) {
-                console.error('Session validation error:', error);
-                
-                // Fallback to stored session if available
-                if (storedUserId && storedUsername) {
-                    sessionToken = token;
-                    userId = storedUserId;
-                    currentUser = storedUsername;
-                    useDemo = true;
-                    sessionStorage.setItem('demo_mode', 'true');
-                    return true;
-                }
-            }
-            
-            return false;
-        }
-
-        function showLoginSuccess() {
-            console.log('showLoginSuccess called'); // Debug log
-            
-            try {
-                const loginScreen = document.getElementById('loginScreen');
-                const mainApp = document.getElementById('mainApp');
-                const currentUserElement = document.getElementById('currentUser');
-                
-                console.log('Login screen element:', loginScreen); // Debug log
-                console.log('Main app element:', mainApp); // Debug log
-                
-                if (loginScreen) {
-                    loginScreen.style.display = 'none';
-                    console.log('Login screen hidden'); // Debug log
-                }
-                
-                if (mainApp) {
-                    mainApp.classList.add('authenticated');
-                    console.log('Main app authenticated class added'); // Debug log
-                }
-                
-                if (currentUserElement) {
-                    currentUserElement.textContent = `Welcome, ${currentUser}!`;
-                    console.log('User welcome text set'); // Debug log
-                }
-                
-                // Show appropriate welcome message
-                if (useDemo) {
-                    showMessage(`Welcome back, ${currentUser}! (Demo Mode)`, 'info');
-                } else {
-                    showMessage(`Welcome back, ${currentUser}!`, 'success');
-                }
-                
-                console.log('Calling initializeApp'); // Debug log
-                initializeApp();
-                
-            } catch (error) {
-                console.error('Error in showLoginSuccess:', error);
-            }
-        }
+        let useDemo = true; // Always use demo mode
 
         // Tab Management
         function showTab(tabName, clickedElement) {
+            console.log('Switching to tab:', tabName);
+            
             // Hide all tab contents
             const tabContents = document.querySelectorAll('.tab-content');
             tabContents.forEach(tab => {
@@ -1264,6 +690,9 @@
             const targetTab = document.getElementById(tabName);
             if (targetTab) {
                 targetTab.classList.add('active');
+                console.log('Tab activated:', tabName);
+            } else {
+                console.error('Tab not found:', tabName);
             }
 
             // Add active class to clicked tab
@@ -1271,565 +700,120 @@
                 clickedElement.classList.add('active');
             }
 
-            // Load tab-specific data
-            loadTabData(tabName);
-            
-            console.log(`Switched to tab: ${tabName}`); // Debug log
+            showMessage(`Switched to ${tabName} tab`, 'info');
         }
 
-        function loadTabData(tabName) {
-            console.log(`Loading data for tab: ${tabName}`); // Debug log
-            
-            switch(tabName) {
-                case 'dashboard':
-                    refreshAll();
-                    break;
-                case 'transactions':
-                    // Load any transaction-specific data if needed
-                    break;
-                case 'buckets':
-                    loadBuckets();
-                    break;
-                case 'debts':
-                    loadDebts();
-                    break;
-                case 'accounts':
-                    loadAccounts();
-                    loadCategories();
-                    break;
-                case 'reports':
-                    // Load any report-specific data if needed
-                    break;
-                case 'settings':
-                    loadSettingsData();
-                    break;
-                default:
-                    console.log(`Unknown tab: ${tabName}`);
-            }
-        }
-
-        // OpenAI Integration with secure API key storage
-        async function callOpenAI(prompt, maxTokens = 150) {
-            let apiKey;
-            
-            try {
-                apiKey = await callFunction('get_user_setting', {
-                    p_user_id: userId,
-                    p_setting_key: 'openai_api_key'
-                });
-            } catch (error) {
-                return 'Please configure your OpenAI API key in Settings to enable AI features.';
-            }
-
-            if (!apiKey) {
-                return 'Please configure your OpenAI API key in Settings to enable AI features.';
-            }
-
-            try {
-                const response = await fetch('https://api.openai.com/v1/chat/completions', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${apiKey}`
-                    },
-                    body: JSON.stringify({
-                        model: 'gpt-3.5-turbo',
-                        messages: [{ role: 'user', content: prompt }],
-                        max_tokens: maxTokens,
-                        temperature: 0.3
-                    })
-                });
-
-                if (!response.ok) {
-                    if (response.status === 401) {
-                        return 'Invalid OpenAI API key. Please check your key in Settings';
-                    } else if (response.status === 429) {
-                        return 'AI rate limit exceeded. Please try again in a moment.';
-                    } else {
-                        return `AI service error (${response.status}). Please try again.`;
-                    }
-                }
-
-                const data = await response.json();
-                return data.choices[0].message.content.trim();
-            } catch (error) {
-                console.error('OpenAI Error:', error);
-                return 'Unable to reach AI service. Check your internet connection.';
-            }
-        }
-
-        async function testAI() {
-            showMessage('Testing AI connection...', 'info');
-            const result = await callOpenAI('Say "AI is working!" in a cheerful way.');
-            showMessage(`AI Test Result: ${result}`, result.includes('working') || result.includes('cheerful') ? 'success' : 'error');
-        }
-
-        // Simplified session and security functions
-        async function changePassword() {
-            showMessage('Password change feature available in full version', 'info');
-        }
-
-        async function saveOpenAIKey() {
-            const apiKey = document.getElementById('openaiApiKey').value.trim();
-            
-            if (!apiKey) {
-                showMessage('Please enter an API key', 'error');
-                return;
-            }
-
-            // Store in session storage for demo
-            sessionStorage.setItem('openai_api_key', apiKey);
-            showMessage('OpenAI API key saved for this session', 'success');
-            document.getElementById('openaiApiKey').value = '';
-        }
-
-        async function loadOpenAIKey() {
-            const apiKey = sessionStorage.getItem('openai_api_key');
-            if (apiKey) {
-                document.getElementById('openaiApiKey').placeholder = 'API key is configured for this session';
-            }
-        }
-
-        async function getClientIP() {
-            try {
-                const response = await fetch('https://api.ipify.org?format=json');
-                const data = await response.json();
-                return data.ip;
-            } catch (error) {
-                return 'unknown';
-            }
-        }
-
-        // Connection and API Functions
-        async function testConnection() {
-            try {
-                const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/test_connection`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'apikey': SUPABASE_KEY,
-                        'Authorization': `Bearer ${SUPABASE_KEY}`,
-                        'Accept': 'application/json'
-                    },
-                    body: '{}',
-                    mode: 'cors'
-                });
-                
-                if (response.ok) {
-                    isConnected = true;
-                    updateConnectionStatus(true);
-                    return true;
-                }
-            } catch (error) {
-                console.log('Supabase connection failed:', error);
-                isConnected = false;
-                useDemo = true;
-                updateConnectionStatus(false);
-                return false;
-            }
-        }
-
-        function updateConnectionStatus(connected) {
-            const statusEl = document.getElementById('connectionStatus');
-            
-            if (connected) {
-                statusEl.className = 'connection-status connected';
-                statusEl.innerHTML = 'Connected to Supabase - Real data active';
-            } else {
-                statusEl.className = 'connection-status demo-mode';
-                statusEl.innerHTML = 'Demo Mode - Sample data shown (CORS blocked)';
-            }
-        }
-
-        async function callFunction(functionName, params = {}) {
-            // Special handling for authentication functions
-            if (functionName === 'login_user' || functionName === 'validate_session') {
-                try {
-                    const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${functionName}`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'apikey': SUPABASE_KEY,
-                            'Authorization': `Bearer ${SUPABASE_KEY}`,
-                            'Accept': 'application/json',
-                            'Prefer': 'return=minimal'
-                        },
-                        body: JSON.stringify(params),
-                        mode: 'cors'
-                    });
-                    
-                    if (!response.ok) {
-                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                    }
-                    
-                    const result = await response.json();
-                    return result;
-                } catch (error) {
-                    console.error(`Error calling ${functionName}:`, error);
-                    throw error;
-                }
-            }
-
-            // For other functions, use demo mode if needed
-            if (useDemo) {
-                console.log(`Demo mode: ${functionName} called with:`, params);
-                return { success: true, message: 'Demo mode operation' };
-            }
-
-            try {
-                const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${functionName}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'apikey': SUPABASE_KEY,
-                        'Authorization': `Bearer ${SUPABASE_KEY}`,
-                        'Accept': 'application/json',
-                        'Prefer': 'return=minimal'
-                    },
-                    body: JSON.stringify(params),
-                    mode: 'cors'
-                });
-                
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    throw new Error(`HTTP ${response.status}: ${errorText}`);
-                }
-                
-                const result = await response.json();
-                return result;
-            } catch (error) {
-                console.error(`Error calling ${functionName}:`, error);
-                throw error;
-            }
-        }
-
-        async function queryTable(tableName, params = '') {
-            if (useDemo) {
-                return getDemoData(tableName);
-            }
-
-            try {
-                const response = await fetch(`${SUPABASE_URL}/rest/v1/${tableName}${params}`, {
-                    method: 'GET',
-                    headers: {
-                        'apikey': SUPABASE_KEY,
-                        'Authorization': `Bearer ${SUPABASE_KEY}`,
-                        'Accept': 'application/json'
-                    },
-                    mode: 'cors'
-                });
-                
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    throw new Error(`HTTP ${response.status}: ${errorText}`);
-                }
-                
-                return await response.json();
-            } catch (error) {
-                console.error(`Error querying ${tableName}:`, error);
-                throw error;
-            }
-        }
-
-        // Demo Data
-        function getDemoData(tableName) {
-            const demoData = {
-                'balance_breakdown': [{
-                    total_balance: 1924.50,
-                    total_allocated: 1000.00,
-                    unallocated_balance: 924.50
-                }],
-                'bucket_overview_formatted': [
-                    {
-                        name: 'Emergency Fund',
-                        status_icon: '🔴',
-                        allocated_amount: '€500.00',
-                        target_amount: '€2,500.00',
-                        progress_percent: '20.0'
-                    },
-                    {
-                        name: 'Flexible Buffer',
-                        status_icon: '🔴',
-                        allocated_amount: '€150.00',
-                        target_amount: '€400.00',
-                        progress_percent: '37.5'
-                    }
-                ],
-                'monthly_spending_formatted': [
-                    {
-                        category: 'Entertainment',
-                        status_icon: '🚨',
-                        spent: '€80.00',
-                        budget_limit: '€80.00',
-                        percent_used: '100.0'
-                    },
-                    {
-                        category: 'Food',
-                        status_icon: '✅',
-                        spent: '€125.50',
-                        budget_limit: '€250.00',
-                        percent_used: '50.2'
-                    }
-                ],
-                'debt_summary': [
-                    { 
-                        name: 'Credit Card', 
-                        remaining: 1850, 
-                        minimum_payment: 150, 
-                        due_day: 25, 
-                        months_to_payoff: 12.3 
-                    }
-                ],
-                'categories': [
-                    { name: 'Food', budget_limit: 250 },
-                    { name: 'Transport', budget_limit: 120 },
-                    { name: 'Bills', budget_limit: 400 },
-                    { name: 'Entertainment', budget_limit: 80 },
-                    { name: 'Shopping', budget_limit: 150 },
-                    { name: 'Healthcare', budget_limit: 80 },
-                    { name: 'Other', budget_limit: 100 }
-                ],
-                'accounts': [
-                    { name: 'Main Account', type: 'checking', balance: 1924.50 },
-                    { name: 'Savings', type: 'savings', balance: 5000.00 },
-                    { name: 'Credit Card', type: 'credit', balance: -1850.00 }
-                ]
-            };
-            
-            return demoData[tableName] || [];
-        }
-
-        // Core Functions
-        async function addExpense() {
-            const amount = parseFloat(document.getElementById('quickAmount').value);
+        // Demo Functions
+        function addExpense() {
+            const amount = document.getElementById('quickAmount').value;
             const description = document.getElementById('quickDescription').value;
             const category = document.getElementById('quickCategory').value;
-
-            if (!amount || !description) {
-                showMessage('Please fill in amount and description', 'error');
-                return;
-            }
-
-            if (useDemo) {
-                showMessage(`Demo Mode: Would add €${amount} expense for ${description} (${category})`, 'info');
+            
+            if (amount && description) {
+                showMessage(`Demo: Added €${amount} expense for ${description} (${category})`, 'success');
                 document.getElementById('quickAmount').value = '';
                 document.getElementById('quickDescription').value = '';
-                return;
-            }
-
-            try {
-                const result = await callFunction('add_expense', {
-                    account_name: 'Main Account',
-                    category_name: category,
-                    amount: amount,
-                    description: description
-                });
-
-                if (result.success) {
-                    showMessage(`Expense added: ${formatEuro(amount)} for ${description}`, 'success');
-                    document.getElementById('quickAmount').value = '';
-                    document.getElementById('quickDescription').value = '';
-                    await refreshAll();
-                } else {
-                    showMessage(`Error: ${result.error || 'Failed to add expense'}`, 'error');
-                }
-            } catch (error) {
-                showMessage('Failed to add expense', 'error');
-            }
-        }
-
-        async function addIncome() {
-            const amount = parseFloat(document.getElementById('quickAmount').value);
-            const description = document.getElementById('quickDescription').value;
-
-            if (!amount || !description) {
+            } else {
                 showMessage('Please fill in amount and description', 'error');
+            }
+        }
+
+        function addIncome() {
+            const amount = document.getElementById('quickAmount').value;
+            const description = document.getElementById('quickDescription').value;
+            
+            if (amount && description) {
+                showMessage(`Demo: Added €${amount} income for ${description}`, 'success');
+                document.getElementById('quickAmount').value = '';
+                document.getElementById('quickDescription').value = '';
+            } else {
+                showMessage('Please fill in amount and description', 'error');
+            }
+        }
+
+        async function processAIExpense() {
+            const input = document.getElementById('aiExpenseInput').value.trim();
+            if (!input) {
+                showMessage('Please enter an expense description', 'error');
                 return;
             }
+            
+            showMessage('Demo: AI would parse this expense in real version', 'info');
+        }
 
-            if (useDemo) {
-                showMessage('Demo Mode: Income would be added in real version', 'info');
+        async function askAIAssistant() {
+            const question = document.getElementById('aiQuestion').value.trim();
+            if (!question) {
+                showMessage('Please enter a question', 'error');
                 return;
             }
+            
+            const responseDiv = document.getElementById('aiResponse');
+            const responseText = document.getElementById('aiResponseText');
+            
+            responseDiv.style.display = 'block';
+            responseText.textContent = 'Demo: AI assistant would provide financial advice here in the real version.';
+        }
 
-            try {
-                const result = await callFunction('add_income', {
-                    account_name: 'Main Account',
-                    amount: amount,
-                    description: description
-                });
+        function refreshSpending() {
+            showMessage('Demo: Spending data refreshed', 'info');
+        }
 
-                if (result.success) {
-                    showMessage(`Income added: ${formatEuro(amount)} for ${description}`, 'success');
-                    document.getElementById('quickAmount').value = '';
-                    document.getElementById('quickDescription').value = '';
-                    await refreshAll();
-                } else {
-                    showMessage(`Error: ${result.error || 'Failed to add income'}`, 'error');
-                }
-            } catch (error) {
-                showMessage('Failed to add income', 'error');
+        function allocateToBucket() {
+            showMessage('Demo: Bucket allocation feature', 'info');
+        }
+
+        function addNewDebt() {
+            showMessage('Demo: Add debt feature', 'info');
+        }
+
+        function addNewAccount() {
+            showMessage('Demo: Add account feature', 'info');
+        }
+
+        function getAIInsights() {
+            const container = document.getElementById('aiInsights');
+            container.innerHTML = `
+                <div style="padding: 15px; background: rgba(102, 126, 234, 0.1); border-radius: 8px;">
+                    <div style="font-weight: 600; margin-bottom: 10px;">🤖 Demo AI Analysis:</div>
+                    <p>Your entertainment budget is at 100% utilization. Consider reducing discretionary spending or increasing the budget allocation. Your food and transport spending are within healthy ranges.</p>
+                </div>
+            `;
+        }
+
+        function generateReport() {
+            showMessage('Demo: Report generation feature', 'info');
+        }
+
+        function saveOpenAIKey() {
+            const apiKey = document.getElementById('openaiApiKey').value.trim();
+            if (apiKey) {
+                sessionStorage.setItem('openai_api_key', apiKey);
+                showMessage('API key saved for this session', 'success');
+                document.getElementById('openaiApiKey').value = '';
+            } else {
+                showMessage('Please enter an API key', 'error');
             }
         }
 
-        // Account Management Functions
-        async function addNewAccount() {
-            const name = document.getElementById('newAccountName').value.trim();
-            const type = document.getElementById('newAccountType').value;
-            const balance = parseFloat(document.getElementById('newAccountBalance').value) || 0;
-
-            if (!name) {
-                showMessage('Please enter account name', 'error');
-                return;
-            }
-
-            if (useDemo) {
-                showMessage(`Demo Mode: Would add account "${name}" with €${balance} balance`, 'info');
-                return;
-            }
-
-            try {
-                const response = await fetch(`${SUPABASE_URL}/rest/v1/accounts`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'apikey': SUPABASE_KEY,
-                        'Authorization': `Bearer ${SUPABASE_KEY}`,
-                        'Prefer': 'return=minimal'
-                    },
-                    body: JSON.stringify({ name, type, balance })
-                });
-
-                if (response.ok) {
-                    showMessage(`Account "${name}" added successfully`, 'success');
-                    document.getElementById('newAccountName').value = '';
-                    document.getElementById('newAccountBalance').value = '';
-                    await loadAccounts();
-                } else {
-                    showMessage('Failed to add account', 'error');
-                }
-            } catch (error) {
-                showMessage('Error adding account', 'error');
+        function testAI() {
+            const apiKey = sessionStorage.getItem('openai_api_key');
+            if (apiKey) {
+                showMessage('Demo: AI connection would be tested with your API key', 'success');
+            } else {
+                showMessage('Please save an API key first', 'error');
             }
         }
 
-        async function addNewCategory() {
-            const name = document.getElementById('newCategoryName').value.trim();
-            const budgetLimit = parseFloat(document.getElementById('newCategoryBudget').value) || 0;
-
-            if (!name) {
-                showMessage('Please enter category name', 'error');
-                return;
-            }
-
-            if (useDemo) {
-                showMessage(`Demo Mode: Would add category "${name}" with €${budgetLimit} budget`, 'info');
-                return;
-            }
-
-            try {
-                const response = await fetch(`${SUPABASE_URL}/rest/v1/categories`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'apikey': SUPABASE_KEY,
-                        'Authorization': `Bearer ${SUPABASE_KEY}`,
-                        'Prefer': 'return=minimal'
-                    },
-                    body: JSON.stringify({ name, budget_limit: budgetLimit })
-                });
-
-                if (response.ok) {
-                    showMessage(`Category "${name}" added successfully`, 'success');
-                    document.getElementById('newCategoryName').value = '';
-                    document.getElementById('newCategoryBudget').value = '';
-                    await loadCategories();
-                } else {
-                    showMessage('Failed to add category', 'error');
-                }
-            } catch (error) {
-                showMessage('Error adding category', 'error');
-            }
+        function saveBudgetSettings() {
+            showMessage('Demo: Budget settings saved', 'success');
         }
 
-        // Data Loading Functions
-        async function loadAccounts() {
-            try {
-                const data = await queryTable('accounts');
-                const container = document.getElementById('accountsContainer');
-                
-                if (data && data.length > 0) {
-                    container.innerHTML = data.map(account => `
-                        <div class="list-item">
-                            <div>
-                                <h4>${getAccountIcon(account.type)} ${account.name}</h4>
-                                <small>Type: ${capitalizeFirst(account.type)}</small>
-                            </div>
-                            <div class="list-amount">
-                                ${formatEuro(account.balance)}
-                            </div>
-                        </div>
-                    `).join('');
-                } else {
-                    container.innerHTML = '<div class="loading">No accounts found</div>';
-                }
-            } catch (error) {
-                document.getElementById('accountsContainer').innerHTML = '<div class="error">Failed to load accounts</div>';
-            }
+        function checkForUpdates() {
+            showMessage('Demo: No updates available', 'info');
         }
 
-        async function loadCategories() {
-            try {
-                const data = await queryTable('categories');
-                const container = document.getElementById('categoriesContainer');
-                
-                if (data && data.length > 0) {
-                    container.innerHTML = data.map(category => `
-                        <div class="list-item">
-                            <div>
-                                <h4>${category.name}</h4>
-                            </div>
-                            <div class="list-amount">
-                                Budget: ${formatEuro(category.budget_limit)}
-                            </div>
-                        </div>
-                    `).join('');
-                } else {
-                    container.innerHTML = '<div class="loading">No categories found</div>';
-                }
-            } catch (error) {
-                document.getElementById('categoriesContainer').innerHTML = '<div class="error">Failed to load categories</div>';
-            }
-        }
-
-        async function refreshAccounts() {
-            document.getElementById('accountsContainer').innerHTML = '<div class="loading">Refreshing...</div>';
-            await loadAccounts();
-        }
-
-        // Helper Functions
-        function getAccountIcon(type) {
-            const icons = {
-                'checking': '🏦',
-                'savings': '💰',
-                'credit': '💳',
-                'cash': '💵',
-                'investment': '📈'
-            };
-            return icons[type] || '🏦';
-        }
-
-        function capitalizeFirst(str) {
-            return str.charAt(0).toUpperCase() + str.slice(1);
-        }
-
-        function formatEuro(amount) {
-            return new Intl.NumberFormat('de-DE', {
-                style: 'currency',
-                currency: 'EUR'
-            }).format(amount);
-        }
-
+        // Utility Functions
         function showMessage(message, type = 'success') {
             const container = document.getElementById('messageContainer');
             const messageDiv = document.createElement('div');
@@ -1844,76 +828,46 @@
             messageDiv.onclick = () => messageDiv.remove();
             container.appendChild(messageDiv);
             
-            const autoRemoveTime = type === 'error' ? 8000 : 5000;
             setTimeout(() => {
                 if (messageDiv.parentNode) {
                     messageDiv.remove();
                 }
-            }, autoRemoveTime);
+            }, 5000);
         }
 
-        async function getClientIP() {
-            try {
-                const response = await fetch('https://api.ipify.org?format=json');
-                const data = await response.json();
-                return data.ip;
-            } catch (error) {
-                return 'unknown';
+        // PWA Setup
+        function setupPWA() {
+            if ('serviceWorker' in navigator) {
+                const swCode = `
+                    const CACHE_NAME = 'finance-app-v1';
+                    self.addEventListener('install', event => {
+                        self.skipWaiting();
+                    });
+                    self.addEventListener('fetch', event => {
+                        event.respondWith(
+                            caches.match(event.request).then(response => {
+                                return response || fetch(event.request);
+                            })
+                        );
+                    });
+                `;
+                const blob = new Blob([swCode], { type: 'application/javascript' });
+                const swUrl = URL.createObjectURL(blob);
+                navigator.serviceWorker.register(swUrl);
             }
-        }
-
-        // Initialize app after login
-        async function initializeApp() {
-            // Test connection first
-            const connected = await testConnection();
             
-            if (connected) {
-                showMessage('Connected! Loading your financial data...', 'success');
-                await refreshAll();
-                await loadDebts();
-                setInterval(refreshAll, 30000);
-            } else {
-                useDemo = true; // Enable demo mode
-                await loadBalance();
-                await loadSpending();
-                await loadBuckets();
-                await loadDebts();
-                await loadAlerts();
-                await loadAccounts();
-                await loadCategories();
-                showMessage('Demo mode - Sample data loaded', 'info');
+            // Update PWA status
+            if (window.matchMedia('(display-mode: standalone)').matches) {
+                document.getElementById('installStatus').textContent = 'Installed as PWA ✅';
             }
-
-            await loadOpenAIKey();
-            
-            // Ensure dashboard tab is active on initialization
-            showTab('dashboard', document.querySelector('.nav-tab.active'));
         }
 
-        // Placeholder functions for missing functionality
-        async function refreshAll() {
-            await Promise.all([
-                loadBalance(),
-                loadSpending(),
-                loadAlerts()
-            ]);
-        }
-
-        async function loadBalance() {
-            if (useDemo) {
-                const balance = getDemoData('balance_breakdown')[0];
-                document.getElementById('totalBalance').textContent = formatEuro(balance.total_balance);
-                document.getElementById('allocatedAmount').textContent = formatEuro(balance.total_allocated);
-                document.getElementById('unallocatedAmount').textContent = formatEuro(balance.unallocated_balance);
-                return;
-            }
-            // Real implementation would go here
-        }
-
-        async function loadSpending() {
-            try {
-                const data = await queryTable('monthly_spending_formatted');
-                const container = document.getElementById('spendingContainer');
-                
-                if (data && data.length > 0) {
-                    container.innerHTML = data.map(category => `
+        // Initialize App
+        document.addEventListener('DOMContentLoaded', function() {
+            setupPWA();
+            showMessage('Welcome to your Personal Finance Dashboard! (Demo Mode)', 'success');
+            console.log('App initialized successfully');
+        });
+    </script>
+</body>
+</html>

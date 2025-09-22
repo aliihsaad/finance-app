@@ -11,6 +11,297 @@
             box-sizing: border-box;
         }
 
+        // Fixed Payments Management
+        async function loadFixedPayments() {
+            try {
+                const result = await callFunction('get_fixed_payments');
+                const container = document.getElementById('fixedPaymentsContainer');
+                
+                if (result && result.success && result.payments && result.payments.length > 0) {
+                    container.innerHTML = result.payments.map(payment => `
+                        <div class="list-item">
+                            <div>
+                                <strong>${payment.name}</strong>
+                                <br><small>Due: ${payment.due_day}th • ${payment.category} • Last paid: ${payment.last_paid || 'Never'}</small>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <div class="list-amount">${payment.formatted_amount}</div>
+                                <button class="btn btn-small" onclick="processFixedPayment('${payment.id}')" style="background: rgba(72, 187, 120, 0.8); padding: 4px 8px;">💳</button>
+                                <button class="btn btn-small" onclick="deleteFixedPayment('${payment.id}')" style="background: rgba(245, 101, 101, 0.8); padding: 4px 8px;">×</button>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = '<div class="loading">No fixed payments found</div>';
+                }
+            } catch (error) {
+                showMessage('Failed to load fixed payments', 'error');
+            }
+        }
+
+        async function addFixedPayment() {
+            const name = document.getElementById('fixedPaymentName').value;
+            const amount = document.getElementById('fixedPaymentAmount').value;
+            const category = document.getElementById('fixedPaymentCategory').value;
+            const dueDay = document.getElementById('fixedPaymentDueDay').value;
+            
+            if (!name || !amount || !dueDay) {
+                showMessage('Please fill in all fixed payment fields', 'error');
+                return;
+            }
+
+            try {
+                const result = await callFunction('add_fixed_payment', {
+                    payment_name: name,
+                    amount: parseFloat(amount),
+                    category_name: category,
+                    account_name: 'Main Account',
+                    due_day: parseInt(dueDay)
+                });
+
+                if (result && result.success) {
+                    showMessage(`✅ Fixed payment "${name}" added successfully`, 'success');
+                    clearFixedPaymentForm();
+                    await loadFixedPayments();
+                } else {
+                    showMessage(`Failed to add fixed payment: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showMessage('Failed to add fixed payment', 'error');
+            }
+        }
+
+        async function processFixedPayment(paymentId) {
+            if (!confirm('Process this fixed payment now?')) return;
+
+            try {
+                const result = await callFunction('process_fixed_payment', {
+                    payment_id: paymentId
+                });
+
+                if (result && result.success) {
+                    showMessage(`✅ ${result.message}`, 'success');
+                    await loadFixedPayments();
+                    await loadRealBalance();
+                    await loadRealSpending();
+                    await loadTransactions();
+                } else {
+                    showMessage(`Failed to process payment: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showMessage('Failed to process fixed payment', 'error');
+            }
+        }
+
+        async function deleteFixedPayment(paymentId) {
+            if (!confirm('Are you sure you want to delete this fixed payment?')) return;
+
+            try {
+                const result = await callFunction('delete_fixed_payment', {
+                    payment_id: paymentId
+                });
+
+                if (result && result.success) {
+                    showMessage('✅ Fixed payment deleted successfully', 'success');
+                    await loadFixedPayments();
+                } else {
+                    showMessage(`Failed to delete fixed payment: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showMessage('Failed to delete fixed payment', 'error');
+            }
+        }
+
+        function clearFixedPaymentForm() {
+            document.getElementById('fixedPaymentName').value = '';
+            document.getElementById('fixedPaymentAmount').value = '';
+            document.getElementById('fixedPaymentDueDay').value = '';
+        }
+
+        // Alert Management
+        async function loadAlertManagement() {
+            try {
+                const data = await queryTable('alerts', '?select=id,title,message,alert_type,priority,status,created_at&order=created_at.desc&limit=10');
+                const container = document.getElementById('alertManagementContainer');
+                
+                if (data && data.length > 0) {
+                    container.innerHTML = `
+                        <div style="max-height: 300px; overflow-y: auto;">
+                            ${data.map(alert => `
+                                <div class="list-item" style="background: rgba(${alert.status === 'pending' ? '245, 101, 101' : '74, 85, 104'}, 0.15);">
+                                    <div>
+                                        <strong>${alert.title}</strong>
+                                        <br><small>${alert.message}</small>
+                                        <br><small>${alert.alert_type} • ${alert.priority} • ${alert.status}</small>
+                                    </div>
+                                    <div style="display: flex; align-items: center; gap: 10px;">
+                                        ${alert.status === 'pending' ? `<button class="btn btn-small" onclick="markAlertRead('${alert.id}')" style="background: rgba(72, 187, 120, 0.8); padding: 4px 8px;">✓</button>` : ''}
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+                } else {
+                    container.innerHTML = '<div class="loading">No alerts found</div>';
+                }
+            } catch (error) {
+                showMessage('Failed to load alerts', 'error');
+            }
+        }
+
+        async function createCustomAlert() {
+            const title = document.getElementById('alertTitle').value;
+            const message = document.getElementById('alertMessage').value;
+            const type = document.getElementById('alertType').value;
+            const priority = document.getElementById('alertPriority').value;
+            
+            if (!title || !message) {
+                showMessage('Please fill in alert title and message', 'error');
+                return;
+            }
+
+            try {
+                const result = await callFunction('create_alert', {
+                    alert_title: title,
+                    alert_message: message,
+                    alert_type: type,
+                    priority: priority
+                });
+
+                if (result && result.success) {
+                    showMessage('✅ Alert created successfully', 'success');
+                    clearAlertForm();
+                    await loadAlertManagement();
+                    await loadAlerts(); // Refresh dashboard alerts
+                } else {
+                    showMessage(`Failed to create alert: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showMessage('Failed to create alert', 'error');
+            }
+        }
+
+        async function markAlertRead(alertId) {
+            try {
+                const result = await callFunction('mark_alert_read', {
+                    alert_id: alertId
+                });
+
+                if (result && result.success) {
+                    showMessage('✅ Alert marked as read', 'success');
+                    await loadAlertManagement();
+                    await loadAlerts(); // Refresh dashboard alerts
+                } else {
+                    showMessage(`Failed to mark alert as read: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showMessage('Failed to mark alert as read', 'error');
+            }
+        }
+
+        async function checkPaymentReminders() {
+            try {
+                const result = await callFunction('check_payment_reminders');
+
+                if (result && result.success) {
+                    showMessage(`✅ ${result.message}`, 'success');
+                    await loadAlertManagement();
+                    await loadAlerts(); // Refresh dashboard alerts
+                } else {
+                    showMessage(`Failed to check payment reminders: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showMessage('Failed to check payment reminders', 'error');
+            }
+        }
+
+        function clearAlertForm() {
+            document.getElementById('alertTitle').value = '';
+            document.getElementById('alertMessage').value = '';
+        }
+
+        // Update the showTab function to load appropriate data
+        function showTab(tabName, clickedElement) {
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            const targetTab = document.getElementById(tabName);
+            if (targetTab) {
+                targetTab.classList.add('active');
+            }
+
+            if (clickedElement) {
+                clickedElement.classList.add('active');
+            }
+
+            // Load data for specific tabs
+            if (tabName === 'transactions') {
+                loadTransactions();
+            } else if (tabName === 'buckets') {
+                loadBuckets();
+            } else if (tabName === 'debts') {
+                loadDebts();
+            } else if (tabName === 'accounts') {
+                loadAccounts();
+            } else if (tabName === 'settings') {
+                loadFixedPayments();
+                loadAlertManagement();
+                updateCategorySelects();
+            }
+        }
+
+        // Initialize App
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('🚀 Initializing Personal Finance App...');
+            
+            showMessage('🔄 Testing database connection...', 'info');
+            const connected = await testConnection();
+            
+            if (connected) {
+                showMessage('✅ Connected to Supabase! Loading data...', 'success');
+                
+                await Promise.all([
+                    loadRealBalance(),
+                    loadRealSpending(),
+                    loadAlerts(),
+                    updateCategorySelects()
+                ]);
+            } else {
+                showMessage('⚠️ Using demo mode', 'info');
+                
+                const demoBalance = getDemoData('accounts');
+                if (demoBalance.length > 0) {
+                    document.getElementById('totalBalance').textContent = formatEuro(demoBalance[0].balance);
+                }
+                
+                const demoSpending = getDemoData('monthly_spending_formatted');
+                const spendingContainer = document.getElementById('spendingContainer');
+                spendingContainer.innerHTML = demoSpending.map(category => `
+                    <div class="list-item">
+                        <div><span style="margin-right: 8px;">${category.status_icon}</span><strong>${category.category}</strong></div>
+                        <div class="list-amount">${category.spent_formatted} / ${category.budget_formatted}<br><small>(${category.percent_used}%)</small></div>
+                    </div>
+                `).join('');
+                
+                document.getElementById('alertsContainer').innerHTML = `
+                    <div style="padding: 15px; background: rgba(245, 101, 101, 0.15); border-left: 4px solid #f56565; border-radius: 0 8px 8px 0;">
+                        <div style="font-weight: 600; margin-bottom: 5px; color: #f7fafc;">🚨 Budget Alert: Entertainment</div>
+                        <div style="font-size: 0.9rem; color: #cbd5e0;">You've spent €80.00/€80.00 (100%) of your Entertainment budget this month.</div>
+                    </div>
+                `;
+            }
+            
+            console.log('🎉 Personal Finance App ready!');
+        });
+    </script>
+</body>
+</html>
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%);
@@ -420,6 +711,29 @@
                         <div id="aiResponseText"></div>
                     </div>
                 </div>
+
+                <div class="card">
+                    <div class="card-title">
+                        📋 Recent Transactions
+                        <button class="btn btn-small" onclick="loadTransactions()">↻</button>
+                    </div>
+                    <div id="transactionsContainer">
+                        <div class="loading">Loading transactions...</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">⚙️ Manage Categories</div>
+                    <div class="input-group">
+                        <label>Category Name</label>
+                        <input type="text" id="newCategoryName" placeholder="Groceries">
+                    </div>
+                    <div class="input-group">
+                        <label>Budget Limit (€)</label>
+                        <input type="number" id="newCategoryBudget" placeholder="200.00" step="0.01">
+                    </div>
+                    <button class="btn" onclick="addNewCategory()">➕ Add Category</button>
+                </div>
             </div>
         </div>
 
@@ -575,6 +889,78 @@
                     <input type="number" id="transportBudget" value="120" step="0.01">
                 </div>
                 <button class="btn" onclick="saveBudgetSettings()">💾 Save Budget Settings</button>
+            </div>
+
+            <div class="settings-section">
+                <h3>💳 Fixed Payments</h3>
+                <div id="fixedPaymentsContainer">
+                    <div class="loading">Loading fixed payments...</div>
+                </div>
+                
+                <h4 style="margin-top: 20px; margin-bottom: 15px; color: #90cdf4;">Add New Fixed Payment</h4>
+                <div class="input-group">
+                    <label>Payment Name</label>
+                    <input type="text" id="fixedPaymentName" placeholder="Netflix Subscription">
+                </div>
+                <div class="input-group">
+                    <label>Amount (€)</label>
+                    <input type="number" id="fixedPaymentAmount" placeholder="15.99" step="0.01">
+                </div>
+                <div class="input-group">
+                    <label>Category</label>
+                    <select id="fixedPaymentCategory">
+                        <option value="Bills">📄 Bills</option>
+                        <option value="Entertainment">🎬 Entertainment</option>
+                        <option value="Food">🍕 Food</option>
+                        <option value="Transport">🚗 Transport</option>
+                        <option value="Healthcare">🏥 Healthcare</option>
+                        <option value="Other">📦 Other</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>Due Day (1-31)</label>
+                    <input type="number" id="fixedPaymentDueDay" placeholder="15" min="1" max="31">
+                </div>
+                <button class="btn" onclick="addFixedPayment()">➕ Add Fixed Payment</button>
+            </div>
+
+            <div class="settings-section">
+                <h3>🔔 Alert Management</h3>
+                <div id="alertManagementContainer">
+                    <div class="loading">Loading alerts...</div>
+                </div>
+                
+                <h4 style="margin-top: 20px; margin-bottom: 15px; color: #90cdf4;">Create Custom Alert</h4>
+                <div class="input-group">
+                    <label>Alert Title</label>
+                    <input type="text" id="alertTitle" placeholder="Budget Review Reminder">
+                </div>
+                <div class="input-group">
+                    <label>Alert Message</label>
+                    <textarea id="alertMessage" placeholder="Time to review your monthly budget and spending" rows="2"></textarea>
+                </div>
+                <div class="input-group">
+                    <label>Alert Type</label>
+                    <select id="alertType">
+                        <option value="budget_warning">Budget Warning</option>
+                        <option value="payment_due">Payment Due</option>
+                        <option value="debt_reminder">Debt Reminder</option>
+                        <option value="goal_achieved">Goal Achieved</option>
+                        <option value="task_reminder">Task Reminder</option>
+                        <option value="custom">Custom</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>Priority</label>
+                    <select id="alertPriority">
+                        <option value="low">Low</option>
+                        <option value="medium" selected>Medium</option>
+                        <option value="high">High</option>
+                        <option value="urgent">Urgent</option>
+                    </select>
+                </div>
+                <button class="btn" onclick="createCustomAlert()">➕ Create Alert</button>
+                <button class="btn btn-secondary" onclick="checkPaymentReminders()" style="margin-top: 10px;">🔄 Check Payment Reminders</button>
             </div>
         </div>
 

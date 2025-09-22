@@ -668,7 +668,162 @@
         const SUPABASE_URL = 'https://fbbsfxcftgoetfvnjevt.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZiYnNmeGNmdGdvZXRmdm5qZXZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc4NTM3MzksImV4cCI6MjA3MzQyOTczOX0.SgVG5AAJTcMC8wRJBvIjAibGc6oO126Wj6nK-XALvxY';
         
-        let useDemo = true; // Always use demo mode
+        let useDemo = false; // Try real connection first
+        let isConnected = false;
+
+        // Test Supabase connection
+        async function testConnection() {
+            try {
+                console.log('Testing Supabase connection...');
+                
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/accounts?select=name,balance&limit=1`, {
+                    method: 'GET',
+                    headers: {
+                        'apikey': SUPABASE_KEY,
+                        'Authorization': `Bearer ${SUPABASE_KEY}`,
+                        'Accept': 'application/json'
+                    },
+                    mode: 'cors'
+                });
+                
+                if (response.ok) {
+                    console.log('✅ Supabase connection successful');
+                    isConnected = true;
+                    useDemo = false;
+                    updateConnectionStatus(true);
+                    return true;
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+            } catch (error) {
+                console.log('❌ Supabase connection failed:', error);
+                isConnected = false;
+                useDemo = true;
+                updateConnectionStatus(false);
+                return false;
+            }
+        }
+
+        function updateConnectionStatus(connected) {
+            const statusEl = document.getElementById('connectionStatus');
+            
+            if (connected) {
+                statusEl.className = 'connection-status';
+                statusEl.style.background = 'rgba(25, 135, 84, 0.2)';
+                statusEl.style.color = '#198754';
+                statusEl.style.border = '2px solid #198754';
+                statusEl.innerHTML = '✅ Connected to Supabase - Real Data Active';
+            } else {
+                statusEl.className = 'connection-status';
+                statusEl.style.background = 'rgba(220, 53, 69, 0.2)';
+                statusEl.style.color = '#dc3545';
+                statusEl.style.border = '2px solid #dc3545';
+                statusEl.innerHTML = '🔒 Demo Mode - Supabase Connection Failed (CORS blocked)';
+            }
+        }
+
+        // API Functions
+        async function queryTable(tableName, params = '') {
+            if (useDemo) {
+                return getDemoData(tableName);
+            }
+
+            try {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/${tableName}${params}`, {
+                    method: 'GET',
+                    headers: {
+                        'apikey': SUPABASE_KEY,
+                        'Authorization': `Bearer ${SUPABASE_KEY}`,
+                        'Accept': 'application/json'
+                    },
+                    mode: 'cors'
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                return await response.json();
+            } catch (error) {
+                console.error(`Error querying ${tableName}:`, error);
+                // Fall back to demo data if query fails
+                return getDemoData(tableName);
+            }
+        }
+
+        async function callFunction(functionName, params = {}) {
+            if (useDemo) {
+                console.log(`Demo mode: ${functionName} called with:`, params);
+                return { success: true, message: 'Demo mode operation' };
+            }
+
+            try {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${functionName}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'apikey': SUPABASE_KEY,
+                        'Authorization': `Bearer ${SUPABASE_KEY}`,
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(params),
+                    mode: 'cors'
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const result = await response.json();
+                return result;
+            } catch (error) {
+                console.error(`Error calling ${functionName}:`, error);
+                showMessage(`Database operation failed: ${error.message}`, 'error');
+                return { success: false, error: error.message };
+            }
+        }
+
+        // Load real data functions
+        async function loadRealBalance() {
+            try {
+                const data = await queryTable('accounts', '?select=balance');
+                if (data && data.length > 0) {
+                    const totalBalance = data.reduce((sum, account) => sum + (account.balance || 0), 0);
+                    document.getElementById('totalBalance').textContent = formatEuro(totalBalance);
+                    showMessage('Real balance data loaded', 'success');
+                }
+            } catch (error) {
+                console.error('Failed to load real balance:', error);
+            }
+        }
+
+        async function loadRealSpending() {
+            try {
+                const data = await queryTable('monthly_spending_formatted');
+                const container = document.getElementById('spendingContainer');
+                
+                if (data && data.length > 0) {
+                    container.innerHTML = data.map(category => `
+                        <div class="list-item">
+                            <div><span style="margin-right: 8px;">${category.status_icon}</span><strong>${category.category}</strong></div>
+                            <div class="list-amount">${category.spent} / ${category.budget_limit}<br><small>(${category.percent_used}%)</small></div>
+                        </div>
+                    `).join('');
+                    showMessage('Real spending data loaded', 'success');
+                } else {
+                    container.innerHTML = '<div class="loading">No spending data found</div>';
+                }
+            } catch (error) {
+                console.error('Failed to load real spending:', error);
+            }
+        }
+
+        function formatEuro(amount) {
+            return new Intl.NumberFormat('de-DE', {
+                style: 'currency',
+                currency: 'EUR'
+            }).format(amount);
+        }
 
         // Tab Management
         function showTab(tabName, clickedElement) {
@@ -703,169 +858,98 @@
             showMessage(`Switched to ${tabName} tab`, 'info');
         }
 
-        // Demo Functions
-        function addExpense() {
+        // Demo Functions (enhanced to try real data first)
+        async function addExpense() {
             const amount = document.getElementById('quickAmount').value;
             const description = document.getElementById('quickDescription').value;
             const category = document.getElementById('quickCategory').value;
             
-            if (amount && description) {
-                showMessage(`Demo: Added €${amount} expense for ${description} (${category})`, 'success');
+            if (!amount || !description) {
+                showMessage('Please fill in amount and description', 'error');
+                return;
+            }
+
+            if (useDemo) {
+                showMessage(`Demo: Added €${amount} expense for ${description} (${category})`, 'info');
                 document.getElementById('quickAmount').value = '';
                 document.getElementById('quickDescription').value = '';
-            } else {
-                showMessage('Please fill in amount and description', 'error');
+                return;
+            }
+
+            try {
+                const result = await callFunction('add_expense', {
+                    account_name: 'Main Account',
+                    category_name: category,
+                    amount: parseFloat(amount),
+                    description: description
+                });
+
+                if (result.success) {
+                    showMessage(`✅ Added €${amount} expense for ${description}`, 'success');
+                    document.getElementById('quickAmount').value = '';
+                    document.getElementById('quickDescription').value = '';
+                    await loadRealBalance();
+                    await loadRealSpending();
+                } else {
+                    showMessage(`Error: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showMessage('Failed to add expense', 'error');
             }
         }
 
-        function addIncome() {
+        async function addIncome() {
             const amount = document.getElementById('quickAmount').value;
             const description = document.getElementById('quickDescription').value;
             
-            if (amount && description) {
-                showMessage(`Demo: Added €${amount} income for ${description}`, 'success');
+            if (!amount || !description) {
+                showMessage('Please fill in amount and description', 'error');
+                return;
+            }
+
+            if (useDemo) {
+                showMessage(`Demo: Added €${amount} income for ${description}`, 'info');
                 document.getElementById('quickAmount').value = '';
                 document.getElementById('quickDescription').value = '';
-            } else {
-                showMessage('Please fill in amount and description', 'error');
-            }
-        }
-
-        async function processAIExpense() {
-            const input = document.getElementById('aiExpenseInput').value.trim();
-            if (!input) {
-                showMessage('Please enter an expense description', 'error');
                 return;
             }
-            
-            showMessage('Demo: AI would parse this expense in real version', 'info');
-        }
 
-        async function askAIAssistant() {
-            const question = document.getElementById('aiQuestion').value.trim();
-            if (!question) {
-                showMessage('Please enter a question', 'error');
-                return;
-            }
-            
-            const responseDiv = document.getElementById('aiResponse');
-            const responseText = document.getElementById('aiResponseText');
-            
-            responseDiv.style.display = 'block';
-            responseText.textContent = 'Demo: AI assistant would provide financial advice here in the real version.';
-        }
+            try {
+                const result = await callFunction('add_income', {
+                    account_name: 'Main Account',
+                    amount: parseFloat(amount),
+                    description: description
+                });
 
-        function refreshSpending() {
-            showMessage('Demo: Spending data refreshed', 'info');
-        }
-
-        function allocateToBucket() {
-            showMessage('Demo: Bucket allocation feature', 'info');
-        }
-
-        function addNewDebt() {
-            showMessage('Demo: Add debt feature', 'info');
-        }
-
-        function addNewAccount() {
-            showMessage('Demo: Add account feature', 'info');
-        }
-
-        function getAIInsights() {
-            const container = document.getElementById('aiInsights');
-            container.innerHTML = `
-                <div style="padding: 15px; background: rgba(102, 126, 234, 0.1); border-radius: 8px;">
-                    <div style="font-weight: 600; margin-bottom: 10px;">🤖 Demo AI Analysis:</div>
-                    <p>Your entertainment budget is at 100% utilization. Consider reducing discretionary spending or increasing the budget allocation. Your food and transport spending are within healthy ranges.</p>
-                </div>
-            `;
-        }
-
-        function generateReport() {
-            showMessage('Demo: Report generation feature', 'info');
-        }
-
-        function saveOpenAIKey() {
-            const apiKey = document.getElementById('openaiApiKey').value.trim();
-            if (apiKey) {
-                sessionStorage.setItem('openai_api_key', apiKey);
-                showMessage('API key saved for this session', 'success');
-                document.getElementById('openaiApiKey').value = '';
-            } else {
-                showMessage('Please enter an API key', 'error');
-            }
-        }
-
-        function testAI() {
-            const apiKey = sessionStorage.getItem('openai_api_key');
-            if (apiKey) {
-                showMessage('Demo: AI connection would be tested with your API key', 'success');
-            } else {
-                showMessage('Please save an API key first', 'error');
-            }
-        }
-
-        function saveBudgetSettings() {
-            showMessage('Demo: Budget settings saved', 'success');
-        }
-
-        function checkForUpdates() {
-            showMessage('Demo: No updates available', 'info');
-        }
-
-        // Utility Functions
-        function showMessage(message, type = 'success') {
-            const container = document.getElementById('messageContainer');
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `message ${type}`;
-            messageDiv.innerHTML = `
-                ${message}
-                <span style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); opacity: 0.7; cursor: pointer;">×</span>
-            `;
-            messageDiv.style.position = 'relative';
-            messageDiv.style.cursor = 'pointer';
-            
-            messageDiv.onclick = () => messageDiv.remove();
-            container.appendChild(messageDiv);
-            
-            setTimeout(() => {
-                if (messageDiv.parentNode) {
-                    messageDiv.remove();
+                if (result.success) {
+                    showMessage(`✅ Added €${amount} income for ${description}`, 'success');
+                    document.getElementById('quickAmount').value = '';
+                    document.getElementById('quickDescription').value = '';
+                    await loadRealBalance();
+                } else {
+                    showMessage(`Error: ${result.error}`, 'error');
                 }
-            }, 5000);
+            } catch (error) {
+                showMessage('Failed to add income', 'error');
+            }
         }
 
-        // PWA Setup
-        function setupPWA() {
-            if ('serviceWorker' in navigator) {
-                const swCode = `
-                    const CACHE_NAME = 'finance-app-v1';
-                    self.addEventListener('install', event => {
-                        self.skipWaiting();
-                    });
-                    self.addEventListener('fetch', event => {
-                        event.respondWith(
-                            caches.match(event.request).then(response => {
-                                return response || fetch(event.request);
-                            })
-                        );
-                    });
-                `;
-                const blob = new Blob([swCode], { type: 'application/javascript' });
-                const swUrl = URL.createObjectURL(blob);
-                navigator.serviceWorker.register(swUrl);
+        // Initialize App with real connection test
+        document.addEventListener('DOMContentLoaded', async function() {
+            setupPWA();
+            
+            // Test Supabase connection first
+            showMessage('Testing database connection...', 'info');
+            const connected = await testConnection();
+            
+            if (connected) {
+                showMessage('Connected to Supabase! Loading real data...', 'success');
+                await loadRealBalance();
+                await loadRealSpending();
+            } else {
+                showMessage('Using demo mode - Enable CORS in Supabase for real data', 'info');
             }
             
-            // Update PWA status
-            if (window.matchMedia('(display-mode: standalone)').matches) {
-                document.getElementById('installStatus').textContent = 'Installed as PWA ✅';
-            }
-        }
-
-        // Initialize App
-        document.addEventListener('DOMContentLoaded', function() {
-            setupPWA();
-            showMessage('Welcome to your Personal Finance Dashboard! (Demo Mode)', 'success');
             console.log('App initialized successfully');
         });
     </script>

@@ -4,17 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ali's Personal Finance</title>
-    <meta name="description" content="Personal Finance Dashboard">
-    <meta name="theme-color" content="#667eea">
-    <link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==">
-    
-    <!-- PWA Meta Tags -->
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="Personal Finance">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="application-name" content="Personal Finance">
-    
     <style>
         * {
             margin: 0;
@@ -29,7 +18,6 @@
             color: #e2e8f0;
         }
 
-        /* Header */
         .header {
             background: rgba(45, 55, 72, 0.95);
             backdrop-filter: blur(10px);
@@ -52,7 +40,6 @@
             color: #cbd5e0;
         }
 
-        /* Navigation Tabs */
         .nav-tabs {
             background: rgba(255, 255, 255, 0.98);
             backdrop-filter: blur(10px);
@@ -88,14 +75,12 @@
             background: rgba(102, 126, 234, 0.1);
         }
 
-        /* Main Container */
         .container {
             max-width: 1200px;
             margin: 0 auto;
             padding: 20px;
         }
 
-        /* Tab Content */
         .tab-content {
             display: none;
             opacity: 0;
@@ -107,7 +92,6 @@
             opacity: 1;
         }
 
-        /* Connection Status */
         .connection-status {
             text-align: center;
             padding: 15px;
@@ -119,7 +103,6 @@
             border: 2px solid #4299e1;
         }
 
-        /* Cards */
         .grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -154,7 +137,6 @@
             color: #f7fafc;
         }
 
-        /* Balance Card */
         .balance-card {
             background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
             color: white;
@@ -168,7 +150,6 @@
             text-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
 
-        /* Forms */
         .input-group {
             margin-bottom: 15px;
         }
@@ -203,23 +184,6 @@
             background: rgba(26, 32, 44, 0.95);
         }
 
-        .input-group small {
-            color: #a0aec0;
-            font-size: 0.85rem;
-            margin-top: 5px;
-            display: block;
-        }
-
-        .input-group small a {
-            color: #90cdf4;
-            text-decoration: none;
-        }
-
-        .input-group small a:hover {
-            text-decoration: underline;
-        }
-
-        /* Buttons */
         .btn {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
@@ -238,16 +202,8 @@
             box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
         }
 
-        .btn:active {
-            transform: translateY(0);
-        }
-
         .btn-secondary {
             background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-        }
-
-        .btn-success {
-            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
         }
 
         .btn-small {
@@ -256,13 +212,6 @@
             font-size: 0.9rem;
         }
 
-        .btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        /* List Items */
         .list-item {
             display: flex;
             justify-content: space-between;
@@ -275,39 +224,16 @@
             color: #e2e8f0;
         }
 
-        .list-item:hover {
-            background: rgba(74, 85, 104, 0.5);
-            border-color: rgba(255, 255, 255, 0.2);
-        }
-
         .list-amount {
             font-weight: 600;
             color: #90cdf4;
             text-align: right;
         }
 
-        /* Progress Bar */
-        .progress-bar {
-            width: 100%;
-            height: 8px;
-            background: rgba(74, 85, 104, 0.5);
-            border-radius: 4px;
-            overflow: hidden;
-            margin-top: 8px;
-        }
-
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%);
-            transition: width 0.3s ease;
-        }
-
-        /* Messages */
         .message {
             padding: 15px;
             border-radius: 8px;
             margin: 10px 0;
-            animation: slideIn 0.3s ease;
             font-weight: 500;
         }
 
@@ -336,7 +262,15 @@
             font-style: italic;
         }
 
-        /* Settings */
+        .ai-response {
+            margin-top: 15px;
+            padding: 15px;
+            background: rgba(102, 126, 234, 0.15);
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+            color: #e2e8f0;
+        }
+
         .settings-section {
             margin-bottom: 30px;
             padding: 20px;
@@ -352,62 +286,8 @@
             font-weight: 600;
         }
 
-        /* AI Response */
-        .ai-response {
-            margin-top: 15px;
-            padding: 15px;
-            background: rgba(102, 126, 234, 0.15);
-            border-radius: 8px;
-            border-left: 4px solid #667eea;
-            color: #e2e8f0;
-        }
-
-        .ai-response h4 {
-            font-weight: 600;
-            margin-bottom: 10px;
-            color: #90cdf4;
-        }
-
-        /* Alert Cards */
-        .alert-card {
-            padding: 15px;
-            background: rgba(245, 101, 101, 0.15);
-            border-left: 4px solid #f56565;
-            border-radius: 0 8px 8px 0;
-            margin-bottom: 10px;
-            color: #e2e8f0;
-        }
-
-        .alert-card.warning {
-            background: rgba(237, 137, 54, 0.15);
-            border-left-color: #ed8936;
-        }
-
-        .alert-card.info {
-            background: rgba(66, 153, 225, 0.15);
-            border-left-color: #4299e1;
-        }
-
-        .alert-card.success {
-            background: rgba(72, 187, 120, 0.15);
-            border-left-color: #48bb78;
-        }
-
-        .alert-title {
-            font-weight: 600;
-            margin-bottom: 5px;
-            color: #f7fafc;
-        }
-
-        .alert-message {
-            font-size: 0.9rem;
-            color: #cbd5e0;
-        }
-
-        /* Responsive */
         @media (max-width: 768px) {
             .nav-tabs {
-                flex-wrap: nowrap;
                 overflow-x: auto;
             }
             
@@ -424,36 +304,15 @@
             .grid {
                 grid-template-columns: 1fr;
             }
-            
-            .container {
-                padding: 15px;
-            }
-        }
-
-        @keyframes slideIn {
-            from { transform: translateX(-100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-
-        .masked-key {
-            font-family: monospace;
-            background: rgba(74, 85, 104, 0.3);
-            padding: 8px 12px;
-            border-radius: 6px;
-            font-size: 0.9rem;
-            color: #a0aec0;
-            margin: 10px 0;
         }
     </style>
 </head>
 <body>
-    <!-- Header -->
     <div class="header">
         <h1>💰 Personal Finance Dashboard</h1>
         <p>AI-Powered Financial Management</p>
     </div>
 
-    <!-- Navigation Tabs -->
     <div class="nav-tabs">
         <button class="nav-tab active" onclick="showTab('dashboard', this)">📊 Dashboard</button>
         <button class="nav-tab" onclick="showTab('transactions', this)">💳 Transactions</button>
@@ -465,7 +324,6 @@
     </div>
 
     <div class="container">
-        <!-- Connection Status -->
         <div id="connectionStatus" class="connection-status">
             🔄 Testing Database Connection...
         </div>
@@ -473,11 +331,8 @@
         <!-- Dashboard Tab -->
         <div id="dashboard" class="tab-content active">
             <div class="grid">
-                <!-- Balance Overview -->
                 <div class="card balance-card">
-                    <div class="card-title">
-                        <span>🏦 Account Balance</span>
-                    </div>
+                    <div class="card-title">🏦 Account Balance</div>
                     <div class="balance-amount" id="totalBalance">€0.00</div>
                     <div style="display: flex; justify-content: space-between; margin-top: 15px; font-size: 0.9rem;">
                         <div style="text-align: center;">
@@ -491,11 +346,8 @@
                     </div>
                 </div>
 
-                <!-- Quick Actions -->
                 <div class="card">
-                    <div class="card-title">
-                        <span>⚡ Quick Actions</span>
-                    </div>
+                    <div class="card-title">⚡ Quick Actions</div>
                     <div class="input-group">
                         <label>Amount (€)</label>
                         <input type="number" id="quickAmount" placeholder="25.50" step="0.01">
@@ -520,10 +372,9 @@
                     <button class="btn btn-secondary" onclick="addIncome()" style="margin-top: 10px;">Add Income</button>
                 </div>
 
-                <!-- Monthly Spending -->
                 <div class="card">
                     <div class="card-title">
-                        <span>📊 Monthly Spending</span>
+                        📊 Monthly Spending
                         <button class="btn btn-small" onclick="refreshSpending()">↻</button>
                     </div>
                     <div id="spendingContainer">
@@ -531,11 +382,8 @@
                     </div>
                 </div>
 
-                <!-- Recent Alerts -->
                 <div class="card">
-                    <div class="card-title">
-                        <span>🔔 Active Alerts</span>
-                    </div>
+                    <div class="card-title">🔔 Active Alerts</div>
                     <div id="alertsContainer">
                         <div class="loading">Loading alerts...</div>
                     </div>
@@ -546,11 +394,8 @@
         <!-- Transactions Tab -->
         <div id="transactions" class="tab-content">
             <div class="grid">
-                <!-- AI Expense Entry -->
                 <div class="card">
-                    <div class="card-title">
-                        <span>🤖 AI-Powered Expense Entry</span>
-                    </div>
+                    <div class="card-title">🤖 AI-Powered Expense Entry</div>
                     <div class="input-group">
                         <label>Natural Language Input</label>
                         <textarea id="aiExpenseInput" placeholder="Try: 'I spent 23.50 on coffee at Starbucks this morning'" rows="3"></textarea>
@@ -559,15 +404,12 @@
                     <div id="aiExpenseResult" class="ai-response" style="display: none;">
                         <h4>🤖 AI Parsed Result:</h4>
                         <div id="aiExpenseResultText"></div>
-                        <button class="btn btn-success" onclick="confirmAIExpense()" style="margin-top: 10px; display: none;" id="confirmAIBtn">✅ Confirm & Add</button>
+                        <button class="btn" onclick="confirmAIExpense()" style="margin-top: 10px; display: none;" id="confirmAIBtn">✅ Confirm & Add</button>
                     </div>
                 </div>
 
-                <!-- AI Assistant -->
                 <div class="card">
-                    <div class="card-title">
-                        <span>💡 AI Financial Assistant</span>
-                    </div>
+                    <div class="card-title">💡 AI Financial Assistant</div>
                     <div class="input-group">
                         <label>Ask your AI assistant</label>
                         <textarea id="aiQuestion" placeholder="How much can I spend on entertainment this month?" rows="2"></textarea>
@@ -585,18 +427,14 @@
         <div id="buckets" class="tab-content">
             <div class="grid">
                 <div class="card">
-                    <div class="card-title">
-                        <span>🪣 Bucket Overview</span>
-                    </div>
+                    <div class="card-title">🪣 Bucket Overview</div>
                     <div id="bucketsContainer">
                         <div class="loading">Loading buckets...</div>
                     </div>
                 </div>
 
                 <div class="card">
-                    <div class="card-title">
-                        <span>💰 Allocate to Bucket</span>
-                    </div>
+                    <div class="card-title">💰 Allocate to Bucket</div>
                     <div class="input-group">
                         <label>Bucket</label>
                         <select id="bucketSelect">
@@ -616,18 +454,14 @@
         <div id="debts" class="tab-content">
             <div class="grid">
                 <div class="card">
-                    <div class="card-title">
-                        <span>💳 Debt Management</span>
-                    </div>
+                    <div class="card-title">💳 Debt Management</div>
                     <div id="debtsContainer">
                         <div class="loading">Loading debts...</div>
                     </div>
                 </div>
 
                 <div class="card">
-                    <div class="card-title">
-                        <span>➕ Add New Debt</span>
-                    </div>
+                    <div class="card-title">➕ Add New Debt</div>
                     <div class="input-group">
                         <label>Debt Name</label>
                         <input type="text" id="debtName" placeholder="Car Loan, etc.">
@@ -653,18 +487,14 @@
         <div id="accounts" class="tab-content">
             <div class="grid">
                 <div class="card">
-                    <div class="card-title">
-                        <span>🏦 All Accounts</span>
-                    </div>
+                    <div class="card-title">🏦 All Accounts</div>
                     <div id="accountsContainer">
                         <div class="loading">Loading accounts...</div>
                     </div>
                 </div>
 
                 <div class="card">
-                    <div class="card-title">
-                        <span>➕ Add New Account</span>
-                    </div>
+                    <div class="card-title">➕ Add New Account</div>
                     <div class="input-group">
                         <label>Account Name</label>
                         <input type="text" id="accountName" placeholder="Investment Account">
@@ -691,7 +521,7 @@
             <div class="grid">
                 <div class="card">
                     <div class="card-title">
-                        <span>📊 AI Budget Insights</span>
+                        📊 AI Budget Insights
                         <button class="btn btn-small" onclick="getAIInsights()">🤖 Analyze</button>
                     </div>
                     <div id="aiInsights">
@@ -700,9 +530,7 @@
                 </div>
 
                 <div class="card">
-                    <div class="card-title">
-                        <span>📈 Monthly Report</span>
-                    </div>
+                    <div class="card-title">📈 Monthly Report</div>
                     <div class="input-group">
                         <label>Select Month</label>
                         <select id="reportMonth">
@@ -718,25 +546,20 @@
 
         <!-- Settings Tab -->
         <div id="settings" class="tab-content">
-            <!-- AI Configuration -->
             <div class="settings-section">
                 <h3>🤖 AI Configuration</h3>
                 <div class="input-group">
                     <label>OpenAI API Key</label>
                     <input type="password" id="openaiApiKey" placeholder="sk-proj-...">
-                    <small>Get your key from: <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com</a></small>
                 </div>
-                <div id="currentApiKey" class="masked-key" style="display: none;"></div>
                 <button class="btn" onclick="saveOpenAIKey()">💾 Save API Key</button>
                 <button class="btn btn-secondary" onclick="testAI()" style="margin-top: 10px;">🧪 Test AI Connection</button>
-                <button class="btn btn-small" onclick="loadCurrentApiKey()" style="margin-top: 10px;">👁️ Show Current Key</button>
                 <div id="aiTestResult" class="ai-response" style="display: none; margin-top: 15px;">
                     <h4>🧪 AI Test Result:</h4>
                     <div id="aiTestResultText"></div>
                 </div>
             </div>
 
-            <!-- Budget Settings -->
             <div class="settings-section">
                 <h3>📊 Budget Settings</h3>
                 <div class="input-group">
@@ -753,20 +576,8 @@
                 </div>
                 <button class="btn" onclick="saveBudgetSettings()">💾 Save Budget Settings</button>
             </div>
-
-            <!-- Database Status -->
-            <div class="settings-section">
-                <h3>🗄️ Database Status</h3>
-                <div style="padding: 15px; background: rgba(74, 85, 104, 0.3); border-radius: 8px; margin-bottom: 15px;">
-                    <div><strong>Connection Status:</strong> <span id="dbStatus">Unknown</span></div>
-                    <div><strong>Last Check:</strong> <span id="lastCheck">Never</span></div>
-                    <div><strong>API Key Status:</strong> <span id="apiKeyStatus">Unknown</span></div>
-                </div>
-                <button class="btn btn-secondary" onclick="testConnection()">🔄 Test Connection</button>
-            </div>
         </div>
 
-        <!-- Message Container -->
         <div id="messageContainer"></div>
     </div>
 
@@ -779,51 +590,33 @@
         let isConnected = false;
         let currentParsedExpense = null;
 
-        // Common headers for all requests
         const getHeaders = () => ({
             'apikey': SUPABASE_KEY,
             'Authorization': `Bearer ${SUPABASE_KEY}`,
             'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'Prefer': 'return=representation'
+            'Accept': 'application/json'
         });
 
-        // Test Supabase connection
         async function testConnection() {
             try {
-                console.log('🔄 Testing Supabase connection...');
-                updateDbStatus('Testing...', new Date().toLocaleString());
-                
                 const response = await fetch(`${SUPABASE_URL}/rest/v1/accounts?select=name,balance&limit=1`, {
                     method: 'GET',
                     headers: getHeaders()
                 });
                 
                 if (response.ok) {
-                    console.log('✅ Supabase connection successful');
                     isConnected = true;
                     useDemo = false;
                     updateConnectionStatus(true);
-                    updateDbStatus('Connected ✅', new Date().toLocaleString());
                     return true;
                 } else {
-                    console.log('❌ HTTP Error:', response.status, response.statusText);
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    throw new Error(`HTTP ${response.status}`);
                 }
             } catch (error) {
-                console.log('❌ Supabase connection failed:', error.message);
                 isConnected = false;
                 useDemo = true;
                 updateConnectionStatus(false, error.message);
-                updateDbStatus('Failed ❌', new Date().toLocaleString());
                 return false;
-            }
-        }
-
-        function updateDbStatus(status, lastCheck) {
-            if (document.getElementById('dbStatus')) {
-                document.getElementById('dbStatus').textContent = status;
-                document.getElementById('lastCheck').textContent = lastCheck;
             }
         }
 
@@ -839,79 +632,49 @@
                 statusEl.style.background = 'rgba(245, 101, 101, 0.2)';
                 statusEl.style.color = '#fed7d7';
                 statusEl.style.border = '2px solid #f56565';
-                statusEl.innerHTML = `🔒 Demo Mode - Connection Failed: ${errorMessage || 'Unknown error'}`;
+                statusEl.innerHTML = `🔒 Demo Mode - ${errorMessage || 'Connection failed'}`;
             }
         }
 
-        // API Functions
         async function queryTable(tableName, params = '') {
-            if (useDemo) {
-                return getDemoData(tableName);
-            }
+            if (useDemo) return getDemoData(tableName);
 
             try {
-                const url = `${SUPABASE_URL}/rest/v1/${tableName}${params}`;
-                console.log('📡 Querying:', url);
-                
-                const response = await fetch(url, {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/${tableName}${params}`, {
                     method: 'GET',
                     headers: getHeaders()
                 });
                 
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    console.error('❌ Query failed:', response.status, errorText);
-                    throw new Error(`HTTP ${response.status}: ${errorText}`);
-                }
-                
-                const data = await response.json();
-                console.log('✅ Query successful:', data);
-                return data;
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                return await response.json();
             } catch (error) {
-                console.error(`❌ Error querying ${tableName}:`, error);
-                showMessage(`Database query failed: ${error.message}`, 'error');
                 return getDemoData(tableName);
             }
         }
 
         async function callFunction(functionName, params = {}) {
             if (useDemo) {
-                console.log(`🎭 Demo mode: ${functionName} called with:`, params);
                 return { success: true, message: 'Demo mode operation' };
             }
 
             try {
-                const url = `${SUPABASE_URL}/rest/v1/rpc/${functionName}`;
-                console.log('📡 Calling function:', url, params);
-                
-                const response = await fetch(url, {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${functionName}`, {
                     method: 'POST',
                     headers: getHeaders(),
                     body: JSON.stringify(params)
                 });
                 
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    console.error('❌ Function call failed:', response.status, errorText);
-                    throw new Error(`HTTP ${response.status}: ${errorText}`);
-                }
-                
-                const result = await response.json();
-                console.log('✅ Function call successful:', result);
-                return result;
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                return await response.json();
             } catch (error) {
-                console.error(`❌ Error calling ${functionName}:`, error);
                 showMessage(`Database operation failed: ${error.message}`, 'error');
                 return { success: false, error: error.message };
             }
         }
 
-        // Demo data fallback
         function getDemoData(tableName) {
             const demoData = {
-                'accounts': [
-                    { name: 'Main Account', balance: '1924.50', type: 'checking' }
-                ],
+                'accounts': [{ name: 'Main Account', balance: '1924.50', type: 'checking' }],
                 'monthly_spending_formatted': [
                     { category: 'Entertainment', spent_formatted: '€80.00', budget_formatted: '€80.00', percent_used: '100.0', status_icon: '🚨' },
                     { category: 'Food', spent_formatted: '€125.50', budget_formatted: '€250.00', percent_used: '50.2', status_icon: '✅' },
@@ -921,18 +684,13 @@
                     { name: 'Emergency Fund', allocated_amount: '500.00', target_amount: '2500.00' },
                     { name: 'Flexible Buffer', allocated_amount: '150.00', target_amount: '400.00' }
                 ],
-                'debts': [
-                    { name: 'Credit Card', remaining: '1850.00', minimum_payment: '150.00', due_day: 25 }
-                ]
+                'debts': [{ name: 'Credit Card', remaining: '1850.00', minimum_payment: '150.00', due_day: 25 }]
             };
-            
             return demoData[tableName] || [];
         }
 
-        // Load data functions
         async function loadRealBalance() {
             try {
-                console.log('📊 Loading balance data...');
                 const data = await queryTable('accounts', '?select=balance');
                 
                 if (data && data.length > 0) {
@@ -951,17 +709,14 @@
                     showMessage('✅ Balance data loaded successfully', 'success');
                 } else {
                     document.getElementById('totalBalance').textContent = '€0.00';
-                    showMessage('⚠️ No account data found', 'info');
                 }
             } catch (error) {
-                console.error('❌ Failed to load balance:', error);
                 showMessage('❌ Failed to load balance data', 'error');
             }
         }
 
         async function loadRealSpending() {
             try {
-                console.log('📊 Loading spending data...');
                 const data = await queryTable('monthly_spending_formatted');
                 const container = document.getElementById('spendingContainer');
                 
@@ -972,19 +727,16 @@
                             <div class="list-amount">${category.spent_formatted} / ${category.budget_formatted}<br><small>(${category.percent_used}%)</small></div>
                         </div>
                     `).join('');
-                    showMessage('✅ Spending data loaded successfully', 'success');
                 } else {
                     container.innerHTML = '<div class="loading">No spending data found</div>';
                 }
             } catch (error) {
-                console.error('❌ Failed to load spending:', error);
                 showMessage('❌ Failed to load spending data', 'error');
             }
         }
 
         async function loadBuckets() {
             try {
-                console.log('🪣 Loading buckets data...');
                 const data = await queryTable('buckets', '?select=name,allocated_amount,target_amount&is_active=eq.true');
                 const container = document.getElementById('bucketsContainer');
                 const select = document.getElementById('bucketSelect');
@@ -998,7 +750,9 @@
                             <div class="list-item">
                                 <div>
                                     <h4>${statusIcon} ${bucket.name}</h4>
-                                    <div class="progress-bar"><div class="progress-fill" style="width: ${Math.min(percentage, 100)}%"></div></div>
+                                    <div style="width: 100%; height: 8px; background: rgba(74, 85, 104, 0.5); border-radius: 4px; margin-top: 8px;">
+                                        <div style="height: 100%; background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%); width: ${Math.min(percentage, 100)}%; border-radius: 4px;"></div>
+                                    </div>
                                 </div>
                                 <div class="list-amount">${formatEuro(bucket.allocated_amount)} / ${formatEuro(bucket.target_amount)}<br><small>(${percentage.toFixed(1)}%)</small></div>
                             </div>
@@ -1006,20 +760,17 @@
                     }).join('');
                     
                     select.innerHTML = data.map(bucket => `<option value="${bucket.name}">${bucket.name}</option>`).join('');
-                    showMessage('✅ Buckets data loaded successfully', 'success');
                 } else {
                     container.innerHTML = '<div class="loading">No buckets found</div>';
                     select.innerHTML = '<option value="">No buckets available</option>';
                 }
             } catch (error) {
-                console.error('❌ Failed to load buckets:', error);
                 showMessage('❌ Failed to load buckets data', 'error');
             }
         }
 
         async function loadDebts() {
             try {
-                console.log('💳 Loading debts data...');
                 const data = await queryTable('debts', '?select=name,remaining,minimum_payment,due_day&is_active=eq.true');
                 const container = document.getElementById('debtsContainer');
                 
@@ -1028,32 +779,28 @@
                         const monthsToPayOff = debt.minimum_payment > 0 ? (parseFloat(debt.remaining) / parseFloat(debt.minimum_payment)).toFixed(1) : '∞';
                         
                         return `
-                            <div class="list-item alert-card">
+                            <div class="list-item" style="background: rgba(245, 101, 101, 0.15); border-left: 4px solid #f56565;">
                                 <div>
                                     <strong>💳 ${debt.name}</strong>
                                     <br><small>Due: ${debt.due_day}th • Min: ${formatEuro(debt.minimum_payment)}</small>
                                 </div>
-                                <div style="text-align: right; font-weight: 600;">
+                                <div style="text-align: right; font-weight: 600; color: #fed7d7;">
                                     ${formatEuro(debt.remaining)}
                                     <br><small>(~${monthsToPayOff} months)</small>
                                 </div>
                             </div>
                         `;
                     }).join('');
-                    
-                    showMessage('✅ Debts data loaded successfully', 'success');
                 } else {
                     container.innerHTML = '<div class="loading">No debts found</div>';
                 }
             } catch (error) {
-                console.error('❌ Failed to load debts:', error);
                 showMessage('❌ Failed to load debts data', 'error');
             }
         }
 
         async function loadAccounts() {
             try {
-                console.log('🏦 Loading accounts data...');
                 const data = await queryTable('accounts', '?select=name,type,balance');
                 const container = document.getElementById('accountsContainer');
                 
@@ -1064,20 +811,16 @@
                             <div class="list-amount">${formatEuro(account.balance)}</div>
                         </div>
                     `).join('');
-                    
-                    showMessage('✅ Accounts data loaded successfully', 'success');
                 } else {
                     container.innerHTML = '<div class="loading">No accounts found</div>';
                 }
             } catch (error) {
-                console.error('❌ Failed to load accounts:', error);
                 showMessage('❌ Failed to load accounts data', 'error');
             }
         }
 
         async function loadAlerts() {
             try {
-                console.log('🔔 Loading alerts data...');
                 const data = await queryTable('alerts', '?select=title,message,alert_type,priority&status=eq.pending&limit=5');
                 const container = document.getElementById('alertsContainer');
                 
@@ -1091,27 +834,17 @@
                             'task_reminder': '📋'
                         };
                         
-                        const priorityClasses = {
-                            'urgent': 'alert-card',
-                            'high': 'alert-card warning',
-                            'medium': 'alert-card info',
-                            'low': 'alert-card success'
-                        };
-                        
                         return `
-                            <div class="${priorityClasses[alert.priority] || 'alert-card info'}">
-                                <div class="alert-title">${iconMap[alert.alert_type] || '🔔'} ${alert.title}</div>
-                                <div class="alert-message">${alert.message}</div>
+                            <div style="padding: 15px; background: rgba(245, 101, 101, 0.15); border-left: 4px solid #f56565; border-radius: 0 8px 8px 0; margin-bottom: 10px;">
+                                <div style="font-weight: 600; margin-bottom: 5px; color: #f7fafc;">${iconMap[alert.alert_type] || '🔔'} ${alert.title}</div>
+                                <div style="font-size: 0.9rem; color: #cbd5e0;">${alert.message}</div>
                             </div>
                         `;
                     }).join('');
-                    
-                    showMessage('✅ Alerts data loaded successfully', 'success');
                 } else {
                     container.innerHTML = '<div class="loading">No active alerts</div>';
                 }
             } catch (error) {
-                console.error('❌ Failed to load alerts:', error);
                 showMessage('❌ Failed to load alerts data', 'error');
             }
         }
@@ -1124,10 +857,7 @@
             }).format(num || 0);
         }
 
-        // Tab Management
         function showTab(tabName, clickedElement) {
-            console.log('🔄 Switching to tab:', tabName);
-            
             document.querySelectorAll('.tab-content').forEach(tab => {
                 tab.classList.remove('active');
             });
@@ -1145,21 +875,15 @@
                 clickedElement.classList.add('active');
             }
 
-            // Load data for specific tabs
             if (tabName === 'buckets') {
                 loadBuckets();
             } else if (tabName === 'debts') {
                 loadDebts();
             } else if (tabName === 'accounts') {
                 loadAccounts();
-            } else if (tabName === 'settings') {
-                loadCurrentApiKey();
             }
-
-            showMessage(`Switched to ${tabName} tab`, 'info');
         }
 
-        // Action Functions
         async function addExpense() {
             const amount = document.getElementById('quickAmount').value;
             const description = document.getElementById('quickDescription').value;
@@ -1167,12 +891,6 @@
             
             if (!amount || !description) {
                 showMessage('Please fill in amount and description', 'error');
-                return;
-            }
-
-            if (useDemo) {
-                showMessage(`Demo: Added €${amount} expense for ${description} (${category})`, 'info');
-                clearQuickForm();
                 return;
             }
 
@@ -1189,7 +907,6 @@
                     clearQuickForm();
                     await loadRealBalance();
                     await loadRealSpending();
-                    await loadAlerts();
                 } else {
                     showMessage(`Error: ${result.error}`, 'error');
                 }
@@ -1204,12 +921,6 @@
             
             if (!amount || !description) {
                 showMessage('Please fill in amount and description', 'error');
-                return;
-            }
-
-            if (useDemo) {
-                showMessage(`Demo: Added €${amount} income for ${description}`, 'info');
-                clearQuickForm();
                 return;
             }
 
@@ -1241,12 +952,6 @@
                 return;
             }
 
-            if (useDemo) {
-                showMessage(`Demo: Allocated €${amount} to ${bucketName}`, 'info');
-                document.getElementById('bucketAmount').value = '';
-                return;
-            }
-
             try {
                 const result = await callFunction('allocate_to_bucket', {
                     bucket_name: bucketName,
@@ -1266,7 +971,6 @@
             }
         }
 
-        // AI Functions
         async function processAIExpense() {
             const expenseText = document.getElementById('aiExpenseInput').value;
             
@@ -1318,13 +1022,12 @@
                 });
 
                 if (result.success !== false) {
-                    showMessage(`✅ Added AI-parsed expense: €${currentParsedExpense.amount} for ${currentParsedExpense.description}`, 'success');
+                    showMessage(`✅ Added AI-parsed expense: €${currentParsedExpense.amount}`, 'success');
                     document.getElementById('aiExpenseInput').value = '';
                     document.getElementById('aiExpenseResult').style.display = 'none';
                     currentParsedExpense = null;
                     await loadRealBalance();
                     await loadRealSpending();
-                    await loadAlerts();
                 } else {
                     showMessage(`Error: ${result.error}`, 'error');
                 }
@@ -1347,9 +1050,9 @@
                 });
 
                 if (result && result.success) {
-                    document.getElementById('aiResponseText').textContent = result.advice;
+                    document.getElementById('aiResponseText').innerHTML = result.advice;
                     document.getElementById('aiResponse').style.display = 'block';
-                    showMessage('✅ AI advice generated', 'success');
+                    showMessage('✅ AI provided personalized advice', 'success');
                 } else {
                     showMessage(`AI advice failed: ${result.error}`, 'error');
                 }
@@ -1358,17 +1061,112 @@
             }
         }
 
-        // API Key Management
+        async function getAIInsights() {
+            try {
+                const result = await callFunction('get_ai_financial_advice', {
+                    question: 'Provide comprehensive budget insights and recommendations'
+                });
+
+                if (result && result.success) {
+                    document.getElementById('aiInsights').innerHTML = `
+                        <div class="ai-response">
+                            <h4>🤖 AI Financial Analysis:</h4>
+                            <p>${result.advice}</p>
+                        </div>
+                    `;
+                    showMessage('✅ AI analysis completed', 'success');
+                } else {
+                    showMessage(`AI insights failed: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showMessage('Failed to get AI insights', 'error');
+            }
+        }
+
+        async function generateReport() {
+            try {
+                const reportMonth = document.getElementById('reportMonth').value;
+                const result = await callFunction('generate_monthly_report', {
+                    report_month: reportMonth
+                });
+
+                if (result && result.success) {
+                    const reportHtml = `
+                        <div class="ai-response">
+                            <h4>📈 Monthly Financial Report</h4>
+                            <p><strong>Period:</strong> ${result.period}</p>
+                            
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin: 15px 0;">
+                                <div style="text-align: center; padding: 10px; background: rgba(72, 187, 120, 0.2); border-radius: 8px;">
+                                    <div style="font-size: 1.2rem; font-weight: bold;">€${result.summary.total_income}</div>
+                                    <div>Income</div>
+                                </div>
+                                <div style="text-align: center; padding: 10px; background: rgba(245, 101, 101, 0.2); border-radius: 8px;">
+                                    <div style="font-size: 1.2rem; font-weight: bold;">€${result.summary.total_expenses}</div>
+                                    <div>Expenses</div>
+                                </div>
+                                <div style="text-align: center; padding: 10px; background: rgba(66, 153, 225, 0.2); border-radius: 8px;">
+                                    <div style="font-size: 1.2rem; font-weight: bold;">€${result.summary.net_change}</div>
+                                    <div>Net Change</div>
+                                </div>
+                                <div style="text-align: center; padding: 10px; background: rgba(237, 137, 54, 0.2); border-radius: 8px;">
+                                    <div style="font-size: 1.2rem; font-weight: bold;">${result.summary.savings_rate}%</div>
+                                    <div>Savings Rate</div>
+                                </div>
+                            </div>
+
+                            ${result.recommendations && result.recommendations.length > 0 ? `
+                                <h5>Recommendations:</h5>
+                                <ul style="margin: 10px 0; padding-left: 20px;">
+                                    ${result.recommendations.map(rec => `<li>${rec}</li>`).join('')}
+                                </ul>
+                            ` : ''}
+                        </div>
+                    `;
+                    
+                    document.getElementById('reportContainer').innerHTML = reportHtml;
+                    showMessage('✅ Monthly report generated successfully', 'success');
+                } else {
+                    showMessage(`Report generation failed: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showMessage('Failed to generate report', 'error');
+            }
+        }
+
+        async function saveBudgetSettings() {
+            const food = document.getElementById('foodBudget').value;
+            const entertainment = document.getElementById('entertainmentBudget').value;
+            const transport = document.getElementById('transportBudget').value;
+            
+            if (!food || !entertainment || !transport) {
+                showMessage('Please fill in all budget fields', 'error');
+                return;
+            }
+
+            try {
+                const result = await callFunction('update_budget_limits', {
+                    food_budget: parseFloat(food),
+                    entertainment_budget: parseFloat(entertainment),
+                    transport_budget: parseFloat(transport)
+                });
+
+                if (result && result.success) {
+                    showMessage('✅ Budget settings saved successfully', 'success');
+                    await loadRealSpending();
+                } else {
+                    showMessage(`Failed to save budget settings: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showMessage('Failed to save budget settings', 'error');
+            }
+        }
+
         async function saveOpenAIKey() {
             const apiKey = document.getElementById('openaiApiKey').value;
             
             if (!apiKey.trim()) {
                 showMessage('Please enter an API key', 'error');
-                return;
-            }
-
-            if (!apiKey.startsWith('sk-')) {
-                showMessage('Invalid API key format. Should start with "sk-"', 'error');
                 return;
             }
 
@@ -1381,34 +1179,11 @@
                 if (result && result.success) {
                     showMessage('✅ OpenAI API key saved successfully', 'success');
                     document.getElementById('openaiApiKey').value = '';
-                    await loadCurrentApiKey();
-                    updateApiKeyStatus('Stored ✅');
                 } else {
                     showMessage(`Failed to save API key: ${result.error}`, 'error');
                 }
             } catch (error) {
                 showMessage('Failed to save API key', 'error');
-            }
-        }
-
-        async function loadCurrentApiKey() {
-            try {
-                const result = await callFunction('get_masked_api_key', {
-                    service: 'openai'
-                });
-
-                if (result && result.success) {
-                    document.getElementById('currentApiKey').textContent = `Current key: ${result.masked_key}`;
-                    document.getElementById('currentApiKey').style.display = 'block';
-                    updateApiKeyStatus('Loaded ✅');
-                } else {
-                    document.getElementById('currentApiKey').textContent = 'No API key found';
-                    document.getElementById('currentApiKey').style.display = 'block';
-                    updateApiKeyStatus('Not found ❌');
-                }
-            } catch (error) {
-                console.error('Failed to load API key:', error);
-                updateApiKeyStatus('Error ❌');
             }
         }
 
@@ -1423,34 +1198,14 @@
                     `;
                     document.getElementById('aiTestResult').style.display = 'block';
                     showMessage('✅ AI connection test completed', 'success');
-                    updateApiKeyStatus('Working ✅');
                 } else {
                     document.getElementById('aiTestResultText').textContent = `Test failed: ${result.error}`;
                     document.getElementById('aiTestResult').style.display = 'block';
                     showMessage(`AI test failed: ${result.error}`, 'error');
-                    updateApiKeyStatus('Failed ❌');
                 }
             } catch (error) {
                 showMessage('Failed to test AI connection', 'error');
-                updateApiKeyStatus('Error ❌');
             }
-        }
-
-        function updateApiKeyStatus(status) {
-            if (document.getElementById('apiKeyStatus')) {
-                document.getElementById('apiKeyStatus').textContent = status;
-            }
-        }
-
-        // Other Functions
-        function clearQuickForm() {
-            document.getElementById('quickAmount').value = '';
-            document.getElementById('quickDescription').value = '';
-        }
-
-        async function refreshSpending() {
-            showMessage('🔄 Refreshing spending data...', 'info');
-            await loadRealSpending();
         }
 
         async function addNewDebt() {
@@ -1464,8 +1219,25 @@
                 return;
             }
 
-            // This would need a proper debt creation function in Supabase
-            showMessage('💳 Add debt feature - would insert into debts table', 'info');
+            try {
+                const result = await callFunction('add_debt', {
+                    debt_name: name,
+                    total_amount: parseFloat(balance),
+                    minimum_payment: parseFloat(minPayment),
+                    due_day: parseInt(dueDay),
+                    interest_rate: 0
+                });
+
+                if (result && result.success) {
+                    showMessage(`✅ Debt "${name}" added successfully`, 'success');
+                    clearDebtForm();
+                    await loadDebts();
+                } else {
+                    showMessage(`Failed to add debt: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showMessage('Failed to add debt', 'error');
+            }
         }
 
         async function addNewAccount() {
@@ -1478,46 +1250,48 @@
                 return;
             }
 
-            // This would need a proper account creation function in Supabase
-            showMessage('🏦 Add account feature - would insert into accounts table', 'info');
-        }
-
-        async function getAIInsights() {
             try {
-                const result = await callFunction('get_ai_financial_advice', {
-                    question: 'Provide comprehensive budget insights and recommendations'
+                const result = await callFunction('add_account', {
+                    account_name: name,
+                    account_type: type,
+                    initial_balance: parseFloat(balance)
                 });
 
                 if (result && result.success) {
-                    document.getElementById('aiInsights').innerHTML = `
-                        <div class="ai-response">
-                            <h4>📊 AI Budget Analysis:</h4>
-                            <p>${result.advice}</p>
-                        </div>
-                    `;
-                    showMessage('✅ AI insights generated', 'success');
+                    showMessage(`✅ Account "${name}" added successfully`, 'success');
+                    clearAccountForm();
+                    await loadAccounts();
+                    await loadRealBalance();
                 } else {
-                    showMessage(`AI insights failed: ${result.error}`, 'error');
+                    showMessage(`Failed to add account: ${result.error}`, 'error');
                 }
             } catch (error) {
-                showMessage('Failed to get AI insights', 'error');
+                showMessage('Failed to add account', 'error');
             }
         }
 
-        function generateReport() {
-            showMessage('📈 Report generation feature - would create detailed financial report', 'info');
+        function clearQuickForm() {
+            document.getElementById('quickAmount').value = '';
+            document.getElementById('quickDescription').value = '';
         }
 
-        async function saveBudgetSettings() {
-            const food = document.getElementById('foodBudget').value;
-            const entertainment = document.getElementById('entertainmentBudget').value;
-            const transport = document.getElementById('transportBudget').value;
-            
-            // This would update the categories table with new budget limits
-            showMessage('💾 Budget settings - would update category budget limits', 'info');
+        function clearDebtForm() {
+            document.getElementById('debtName').value = '';
+            document.getElementById('debtBalance').value = '';
+            document.getElementById('debtMinPayment').value = '';
+            document.getElementById('debtDueDay').value = '';
         }
 
-        // Message system
+        function clearAccountForm() {
+            document.getElementById('accountName').value = '';
+            document.getElementById('accountBalance').value = '';
+        }
+
+        async function refreshSpending() {
+            showMessage('🔄 Refreshing spending data...', 'info');
+            await loadRealSpending();
+        }
+
         function showMessage(text, type = 'info') {
             const container = document.getElementById('messageContainer');
             const message = document.createElement('div');
@@ -1526,7 +1300,6 @@
             
             container.appendChild(message);
             
-            // Auto remove after 5 seconds
             setTimeout(() => {
                 if (container.contains(message)) {
                     container.removeChild(message);
@@ -1538,25 +1311,20 @@
         document.addEventListener('DOMContentLoaded', async function() {
             console.log('🚀 Initializing Personal Finance App...');
             
-            // Test Supabase connection first
             showMessage('🔄 Testing database connection...', 'info');
             const connected = await testConnection();
             
             if (connected) {
                 showMessage('✅ Connected to Supabase! Loading data...', 'success');
                 
-                // Load all initial data
                 await Promise.all([
                     loadRealBalance(),
                     loadRealSpending(),
                     loadAlerts()
                 ]);
-                
-                console.log('✅ App initialized with real data');
             } else {
-                showMessage('⚠️ Using demo mode - real database connection failed', 'info');
+                showMessage('⚠️ Using demo mode', 'info');
                 
-                // Load demo data
                 const demoBalance = getDemoData('accounts');
                 if (demoBalance.length > 0) {
                     document.getElementById('totalBalance').textContent = formatEuro(demoBalance[0].balance);
@@ -1571,15 +1339,12 @@
                     </div>
                 `).join('');
                 
-                // Demo alerts
                 document.getElementById('alertsContainer').innerHTML = `
-                    <div class="alert-card">
-                        <div class="alert-title">🚨 Budget Alert: Entertainment</div>
-                        <div class="alert-message">You've spent €80.00/€80.00 (100%) of your Entertainment budget this month.</div>
+                    <div style="padding: 15px; background: rgba(245, 101, 101, 0.15); border-left: 4px solid #f56565; border-radius: 0 8px 8px 0;">
+                        <div style="font-weight: 600; margin-bottom: 5px; color: #f7fafc;">🚨 Budget Alert: Entertainment</div>
+                        <div style="font-size: 0.9rem; color: #cbd5e0;">You've spent €80.00/€80.00 (100%) of your Entertainment budget this month.</div>
                     </div>
                 `;
-                
-                console.log('✅ App initialized with demo data');
             }
             
             console.log('🎉 Personal Finance App ready!');

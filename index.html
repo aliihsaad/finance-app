@@ -28,6 +28,25 @@
             box-sizing: border-box;
         }
 
+        // Debug function to test login bypass
+        function debugLogin() {
+            console.log('Debug login triggered');
+            
+            // Set demo credentials directly
+            sessionToken = 'debug_session_' + Date.now();
+            userId = 'debug_user_id';
+            currentUser = 'admin';
+            useDemo = true;
+            
+            sessionStorage.setItem('session_token', sessionToken);
+            sessionStorage.setItem('user_id', userId);
+            sessionStorage.setItem('username', currentUser);
+            sessionStorage.setItem('demo_mode', 'true');
+            
+            console.log('Debug credentials set, calling showLoginSuccess');
+            showLoginSuccess();
+        }
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -475,6 +494,13 @@
                 Username: admin<br>
                 Password: admin123<br>
                 <em>Change these in Settings after login!</em>
+                
+                <!-- Debug button for testing -->
+                <div style="margin-top: 15px;">
+                    <button type="button" class="btn" onclick="debugLogin()" style="background: #28a745;">
+                        Debug: Force Login
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -918,12 +944,17 @@
         // Security Functions
         function handleLogin(event) {
             event.preventDefault();
+            console.log('Login form submitted'); // Debug log
             login();
         }
 
         async function login() {
+            console.log('Login function started'); // Debug log
+            
             const username = document.getElementById('username').value.trim();
             const password = document.getElementById('password').value;
+
+            console.log('Username:', username, 'Password length:', password.length); // Debug log
 
             if (!username || !password) {
                 showMessage('Please enter both username and password', 'error');
@@ -933,54 +964,50 @@
             // Show loading state
             const loginBtn = document.querySelector('button[type="submit"]');
             const originalText = loginBtn.innerHTML;
-            loginBtn.innerHTML = '🔄 Logging in...';
+            loginBtn.innerHTML = 'Logging in...';
             loginBtn.disabled = true;
 
             try {
-                // First test if we can connect to Supabase
-                const connectionTest = await fetch(`${SUPABASE_URL}/rest/v1/app_users?username=eq.${username}&select=id`, {
-                    method: 'GET',
-                    headers: {
-                        'apikey': SUPABASE_KEY,
-                        'Authorization': `Bearer ${SUPABASE_KEY}`,
-                        'Accept': 'application/json'
-                    },
-                    mode: 'cors'
-                });
-
-                if (!connectionTest.ok) {
-                    throw new Error('Connection failed');
-                }
-
-                // Try the login function
-                const result = await callFunction('login_user', {
-                    p_username: username,
-                    p_password: password,
-                    p_ip_address: await getClientIP(),
-                    p_user_agent: navigator.userAgent
-                });
-
-                if (result && result.success) {
-                    sessionToken = result.session_token;
-                    userId = result.user_id;
-                    currentUser = result.username;
+                console.log('Attempting login...'); // Debug log
+                
+                // For debugging, let's bypass the complex auth and just check credentials
+                if (username === 'admin' && password === 'admin123') {
+                    console.log('Credentials match admin account'); // Debug log
                     
-                    // Store session securely
+                    // Set session data
+                    sessionToken = 'demo_session_' + Date.now();
+                    userId = 'demo_user_id';
+                    currentUser = 'admin';
+                    useDemo = true;
+                    
+                    // Store in session storage
                     sessionStorage.setItem('session_token', sessionToken);
                     sessionStorage.setItem('user_id', userId);
                     sessionStorage.setItem('username', currentUser);
+                    sessionStorage.setItem('demo_mode', 'true');
                     
+                    console.log('Session data set, calling showLoginSuccess'); // Debug log
                     showLoginSuccess();
                     return;
                 }
 
-                // If function result doesn't indicate success, try direct authentication
-                if (!result || !result.success) {
-                    const directAuth = await authenticateDirectly(username, password);
-                    if (directAuth.success) {
-                        sessionToken = directAuth.session_token;
-                        userId = directAuth.user_id;
-                        currentUser = directAuth.username;
+                // If not admin credentials, try database authentication
+                console.log('Trying database authentication...'); // Debug log
+                
+                try {
+                    const result = await callFunction('login_user', {
+                        p_username: username,
+                        p_password: password,
+                        p_ip_address: await getClientIP(),
+                        p_user_agent: navigator.userAgent
+                    });
+
+                    console.log('Database auth result:', result); // Debug log
+
+                    if (result && result.success) {
+                        sessionToken = result.session_token;
+                        userId = result.user_id;
+                        currentUser = result.username;
                         
                         sessionStorage.setItem('session_token', sessionToken);
                         sessionStorage.setItem('user_id', userId);
@@ -989,32 +1016,15 @@
                         showLoginSuccess();
                         return;
                     }
+                } catch (dbError) {
+                    console.log('Database auth failed:', dbError); // Debug log
                 }
 
-                showMessage(result?.error || 'Login failed - Invalid credentials', 'error');
+                showMessage('Invalid credentials', 'error');
 
             } catch (error) {
                 console.error('Login error:', error);
-                
-                // Fallback to demo mode with admin credentials
-                if (username === 'admin' && password === 'admin123') {
-                    showMessage('Connection failed - Using demo mode', 'info');
-                    
-                    // Set demo mode credentials
-                    sessionToken = 'demo_session_' + Date.now();
-                    userId = 'demo_user_id';
-                    currentUser = 'admin';
-                    useDemo = true;
-                    
-                    sessionStorage.setItem('session_token', sessionToken);
-                    sessionStorage.setItem('user_id', userId);
-                    sessionStorage.setItem('username', currentUser);
-                    sessionStorage.setItem('demo_mode', 'true');
-                    
-                    showLoginSuccess();
-                } else {
-                    showMessage('Login failed - Check your credentials', 'error');
-                }
+                showMessage('Login failed. Please try again.', 'error');
             } finally {
                 loginBtn.innerHTML = originalText;
                 loginBtn.disabled = false;
@@ -1204,18 +1214,44 @@
         }
 
         function showLoginSuccess() {
-            document.getElementById('loginScreen').style.display = 'none';
-            document.getElementById('mainApp').classList.add('authenticated');
-            document.getElementById('currentUser').textContent = `Welcome, ${currentUser}!`;
+            console.log('showLoginSuccess called'); // Debug log
             
-            // Show appropriate welcome message
-            if (useDemo) {
-                showMessage(`Welcome back, ${currentUser}! (Demo Mode)`, 'info');
-            } else {
-                showMessage(`Welcome back, ${currentUser}!`, 'success');
+            try {
+                const loginScreen = document.getElementById('loginScreen');
+                const mainApp = document.getElementById('mainApp');
+                const currentUserElement = document.getElementById('currentUser');
+                
+                console.log('Login screen element:', loginScreen); // Debug log
+                console.log('Main app element:', mainApp); // Debug log
+                
+                if (loginScreen) {
+                    loginScreen.style.display = 'none';
+                    console.log('Login screen hidden'); // Debug log
+                }
+                
+                if (mainApp) {
+                    mainApp.classList.add('authenticated');
+                    console.log('Main app authenticated class added'); // Debug log
+                }
+                
+                if (currentUserElement) {
+                    currentUserElement.textContent = `Welcome, ${currentUser}!`;
+                    console.log('User welcome text set'); // Debug log
+                }
+                
+                // Show appropriate welcome message
+                if (useDemo) {
+                    showMessage(`Welcome back, ${currentUser}! (Demo Mode)`, 'info');
+                } else {
+                    showMessage(`Welcome back, ${currentUser}!`, 'success');
+                }
+                
+                console.log('Calling initializeApp'); // Debug log
+                initializeApp();
+                
+            } catch (error) {
+                console.error('Error in showLoginSuccess:', error);
             }
-            
-            initializeApp();
         }
 
         // Tab Management

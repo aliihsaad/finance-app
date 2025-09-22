@@ -1,617 +1,4 @@
-// Debt Management Functions
-        async function makeDebtPayment() {
-            const debtName = document.getElementById('debtSelect').value;
-            const paymentAmount = parseFloat(document.getElementById('debtPaymentAmount').value);
-
-            if (!debtName || !paymentAmount || paymentAmount <= 0) {
-                showMessage('⚠️ Please select a debt and enter a valid payment amount', 'error');
-                return;
-            }
-
-            if (useDemo) {
-                showMessage(`🔄 Demo Mode: Would pay €${paymentAmount} toward ${debtName}`, 'info');
-                document.getElementById('debtPaymentAmount').value = '';
-                return;
-            }
-
-            try {
-                const result = await callFunction('pay_debt', {
-                    debt_name: debtName,
-                    payment_amount: paymentAmount,
-                    account_name: 'Main Account'
-                });
-
-                if (result.success) {
-                    showMessage(`✅ Paid €${paymentAmount} toward ${debtName}. Remaining: €${result.remaining_debt}`, 'success');
-                    document.getElementById('debtPaymentAmount').value = '';
-                    await refreshAll();
-                    await loadDebts();
-                } else {
-                    showMessage(`Error: ${result.error || 'Failed to process payment'}`, 'error');
-                }
-            } catch (error) {
-                showMessage('❌ Failed to process debt payment', 'error');
-            }
-        }
-
-        async function addNewDebt() {
-            const name = document.getElementById('newDebtName').value.trim();
-            const totalAmount = parseFloat(document.getElementById('newDebtTotal').value);
-            const currentBalance = parseFloat(document.getElementById('newDebtBalance').value);
-            const minPayment = parseFloat(document.getElementById('newDebtMinPayment').value);
-            const dueDay = parseInt(document.getElementById('newDebtDueDay').value);
-            const interestRate = parseFloat(document.getElementById('newDebtInterest').value) || 0;
-
-            if (!name || !totalAmount || !currentBalance || !minPayment || !dueDay) {
-                showMessage('⚠️ Please fill in all required debt fields', 'error');
-                return;
-            }
-
-            if (dueDay < 1 || dueDay > 31) {
-                showMessage('⚠️ Due day must be between 1 and 31', 'error');
-                return;
-            }
-
-            if (useDemo) {
-                showMessage(`🔄 Demo Mode: Would add debt "${name}" with €${currentBalance} balance`, 'info');
-                return;
-            }
-
-            try {
-                const response = await fetch(`${SUPABASE_URL}/rest/v1/debts`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'apikey': SUPABASE_KEY,
-                        'Authorization': `Bearer ${SUPABASE_KEY}`,
-                        'Prefer': 'return=minimal'
-                    },
-                    body: JSON.stringify({
-                        name: name,
-                        total_amount: totalAmount,
-                        remaining: currentBalance,
-                        minimum_payment: minPayment,
-                        due_day: dueDay,
-                        interest_rate: interestRate,
-                        is_active: true
-                    })
-                });
-
-                if (response.ok) {
-                    showMessage(`✅ Debt "${name}" added successfully`, 'success');
-                    // Clear form
-                    document.getElementById('newDebtName').value = '';
-                    document.getElementById('newDebtTotal').value = '';
-                    document.getElementById('newDebtBalance').value = '';
-                    document.getElementById('newDebtMinPayment').value = '';
-                    document.getElementById('newDebtDueDay').value = '';
-                    document.getElementById('newDebtInterest').value = '';
-                    
-                    await loadDebts();
-                } else {
-                    showMessage('❌ Failed to add debt', 'error');
-                }
-            } catch (error) {
-                showMessage('❌ Error adding debt', 'error');
-            }
-        }
-
-        async function addFixedPayment() {
-            const name = document.getElementById('newPaymentName').value.trim();
-            const amount = parseFloat(document.getElementById('newPaymentAmount').value);
-            const dueDay = parseInt(document.getElementById('newPaymentDueDay').value);
-            const category = document.getElementById('newPaymentCategory').value;
-
-            if (!name || !amount || !dueDay) {
-                showMessage('⚠️ Please fill in all payment fields', 'error');
-                return;
-            }
-
-            if (dueDay < 1 || dueDay > 31) {
-                showMessage('⚠️ Due day must be between 1 and 31', 'error');
-                return;
-            }
-
-            if (useDemo) {
-                showMessage(`🔄 Demo Mode: Would add fixed payment "${name}" for €${amount}`, 'info');
-                return;
-            }
-
-            try {
-                // Get category ID
-                const categories = await queryTable('categories');
-                const categoryData = categories.find(c => c.name === category);
-
-                const response = await fetch(`${SUPABASE_URL}/rest/v1/fixed_payments`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'apikey': SUPABASE_KEY,
-                        'Authorization': `Bearer ${SUPABASE_KEY}`,
-                        'Prefer': 'return=minimal'
-                    },
-                    body: JSON.stringify({
-                        name: name,
-                        amount: amount,
-                        due_day: dueDay,
-                        category_id: categoryData?.id || null,
-                        is_active: true
-                    })
-                });
-
-                if (response.ok) {
-                    showMessage(`✅ Fixed payment "${name}" added successfully`, 'success');
-                    // Clear form
-                    document.getElementById('newPaymentName').value = '';
-                    document.getElementById('newPaymentAmount').value = '';
-                    document.getElementById('newPaymentDueDay').value = '';
-                    
-                    await loadFixedPayments();
-                } else {
-                    showMessage('❌ Failed to add fixed payment', 'error');
-                }
-            } catch (error) {
-                showMessage('❌ Error adding fixed payment', 'error');
-            }
-        }
-        function toggleSettings() {
-            const panel = document.getElementById('settingsPanel');
-            const overlay = document.getElementById('settingsOverlay');
-            
-            if (showSettings) {
-                closeSettings();
-            } else {
-                panel.classList.add('open');
-                overlay.classList.add('show');
-                showSettings = true;
-                loadSettingsData();
-            }
-        }
-
-        function closeSettings() {
-            const panel = document.getElementById('settingsPanel');
-            const overlay = document.getElementById('settingsOverlay');
-            panel.classList.remove('open');
-            overlay.classList.remove('show');
-            showSettings = false;
-        }
-
-        async function loadSettingsData() {
-            // Load current API key
-            document.getElementById('openaiApiKey').value = OPENAI_API_KEY;
-            
-            // Load budget settings
-            try {
-                const categories = await queryTable('categories');
-                const budgetHtml = categories.map(cat => `
-                    <div class="input-group">
-                        <label>${cat.name}</label>
-                        <input type="number" id="budget_${cat.name}" value="${cat.budget_limit}" step="0.01" placeholder="0.00">
-                    </div>
-                `).join('');
-                document.getElementById('budgetSettings').innerHTML = budgetHtml;
-            } catch (error) {
-                document.getElementById('budgetSettings').innerHTML = '<div class="error">Could not load budget settings</div>';
-            }
-            
-            // Load bucket settings
-            try {
-                const buckets = await queryTable('buckets', '?is_active=eq.true');
-                const bucketHtml = buckets.map(bucket => `
-                    <div class="input-group">
-                        <label>${bucket.name}</label>
-                        <input type="number" id="bucket_${bucket.name.replace(/\s+/g, '_')}" value="${bucket.target_amount}" step="0.01" placeholder="0.00">
-                    </div>
-                `).join('');
-                document.getElementById('bucketSettings').innerHTML = bucketHtml;
-            } catch (error) {
-                document.getElementById('bucketSettings').innerHTML = '<div class="error">Could not load bucket settings</div>';
-            }
-
-            // Check install status
-            updateInstallStatus();
-        }
-
-        function saveOpenAIKey() {
-            const key = document.getElementById('openaiApiKey').value.trim();
-            if (key) {
-                OPENAI_API_KEY = key;
-                localStorage.setItem('openai_api_key', key);
-                showMessage('✅ OpenAI API key saved!', 'success');
-            } else {
-                localStorage.removeItem('openai_api_key');
-                OPENAI_API_KEY = '';
-                showMessage('🗑️ OpenAI API key removed', 'info');
-            }
-        }
-
-        async function testAI() {
-            if (!OPENAI_API_KEY) {
-                showMessage('⚠️ Please save your OpenAI API key first', 'error');
-                return;
-            }
-
-            showMessage('🤖 Testing AI connection...', 'info');
-            const result = await callOpenAI('Say "AI is working!" in a cheerful way.');
-            showMessage(`🤖 AI Test Result: ${result}`, result.includes('working') || result.includes('cheerful') ? 'success' : 'error');
-        }
-
-        async function updateMainBalance() {
-            const newBalance = parseFloat(document.getElementById('setBalance').value);
-            if (!newBalance || newBalance < 0) {
-                showMessage('⚠️ Please enter a valid balance', 'error');
-                return;
-            }
-
-            if (useDemo) {
-                showMessage('🔄 Demo Mode: Would update balance in real version', 'info');
-                return;
-            }
-
-            try {
-                // Update account balance directly
-                const updateResponse = await fetch(`${SUPABASE_URL}/rest/v1/accounts?name=eq.Main Account`, {
-                    method: 'PATCH',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'apikey': SUPABASE_KEY,
-                        'Authorization': `Bearer ${SUPABASE_KEY}`,
-                        'Prefer': 'return=minimal'
-                    },
-                    body: JSON.stringify({ balance: newBalance })
-                });
-
-                if (updateResponse.ok) {
-                    showMessage(`✅ Main Account balance updated to ${formatEuro(newBalance)}`, 'success');
-                    document.getElementById('setBalance').value = '';
-                    await refreshAll();
-                } else {
-                    showMessage('❌ Failed to update balance', 'error');
-                }
-            } catch (error) {
-                showMessage('❌ Error updating balance', 'error');
-            }
-        }
-
-        async function addNewAccount() {
-            const name = document.getElementById('newAccountName').value.trim();
-            const type = document.getElementById('newAccountType').value;
-            const balance = parseFloat(document.getElementById('newAccountBalance').value) || 0;
-
-            if (!name) {
-                showMessage('⚠️ Please enter account name', 'error');
-                return;
-            }
-
-            if (useDemo) {
-                showMessage('🔄 Demo Mode: Would add account in real version', 'info');
-                return;
-            }
-
-            try {
-                const response = await fetch(`${SUPABASE_URL}/rest/v1/accounts`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'apikey': SUPABASE_KEY,
-                        'Authorization': `Bearer ${SUPABASE_KEY}`,
-                        'Prefer': 'return=minimal'
-                    },
-                    body: JSON.stringify({ name, type, balance })
-                });
-
-                if (response.ok) {
-                    showMessage(`✅ Account "${name}" added successfully`, 'success');
-                    document.getElementById('newAccountName').value = '';
-                    document.getElementById('newAccountBalance').value = '';
-                } else {
-                    showMessage('❌ Failed to add account', 'error');
-                }
-            } catch (error) {
-                showMessage('❌ Error adding account', 'error');
-            }
-        }
-
-        async function saveBudgetSettings() {
-            if (useDemo) {
-                showMessage('🔄 Demo Mode: Would save budgets in real version', 'info');
-                return;
-            }
-
-            const categories = await queryTable('categories');
-            let updateCount = 0;
-
-            for (const category of categories) {
-                const newLimit = parseFloat(document.getElementById(`budget_${category.name}`)?.value);
-                if (newLimit >= 0 && newLimit !== category.budget_limit) {
-                    try {
-                        await fetch(`${SUPABASE_URL}/rest/v1/categories?name=eq.${category.name}`, {
-                            method: 'PATCH',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'apikey': SUPABASE_KEY,
-                                'Authorization': `Bearer ${SUPABASE_KEY}`
-                            },
-                            body: JSON.stringify({ budget_limit: newLimit })
-                        });
-                        updateCount++;
-                    } catch (error) {
-                        console.error('Error updating budget:', error);
-                    }
-                }
-            }
-
-            showMessage(`✅ Updated ${updateCount} budget limits`, 'success');
-            await refreshAll();
-        }
-
-        async function saveBucketSettings() {
-            if (useDemo) {
-                showMessage('🔄 Demo Mode: Would save bucket targets in real version', 'info');
-                return;
-            }
-
-            const buckets = await queryTable('buckets', '?is_active=eq.true');
-            let updateCount = 0;
-
-            for (const bucket of buckets) {
-                const fieldId = `bucket_${bucket.name.replace(/\s+/g, '_')}`;
-                const newTarget = parseFloat(document.getElementById(fieldId)?.value);
-                if (newTarget >= 0 && newTarget !== bucket.target_amount) {
-                    try {
-                        await fetch(`${SUPABASE_URL}/rest/v1/buckets?name=eq.${bucket.name}`, {
-                            method: 'PATCH',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'apikey': SUPABASE_KEY,
-                                'Authorization': `Bearer ${SUPABASE_KEY}`
-                            },
-                            body: JSON.stringify({ target_amount: newTarget })
-                        });
-                        updateCount++;
-                    } catch (error) {
-                        console.error('Error updating bucket:', error);
-                    }
-                }
-            }
-
-            showMessage(`✅ Updated ${updateCount} bucket targets`, 'success');
-            await refreshAll();
-        }
-
-        function updateInstallStatus() {
-            const installStatus = document.getElementById('installStatus');
-            const lastUpdated = document.getElementById('lastUpdated');
-            
-            if (window.matchMedia('(display-mode: standalone)').matches) {
-                installStatus.textContent = 'Installed as PWA ✅';
-            } else {
-                installStatus.textContent = 'Running in browser 🌐';
-            }
-            
-            lastUpdated.textContent = new Date().toLocaleString();
-        }
-
-        // Data Management Functions
-        async function exportData() {
-            if (useDemo) {
-                showMessage('🔄 Demo Mode: Would export data in real version', 'info');
-                return;
-            }
-
-            try {
-                const [accounts, transactions, buckets, categories] = await Promise.all([
-                    queryTable('accounts'),
-                    queryTable('transactions', '?order=created_at.desc&limit=1000'),
-                    queryTable('buckets'),
-                    queryTable('categories')
-                ]);
-
-                const exportData = {
-                    exported_at: new Date().toISOString(),
-                    accounts,
-                    transactions,
-                    buckets,
-                    categories
-                };
-
-                const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `finance-export-${new Date().toISOString().split('T')[0]}.json`;
-                a.click();
-                URL.revokeObjectURL(url);
-
-                showMessage('✅ Data exported successfully', 'success');
-            } catch (error) {
-                showMessage('❌ Export failed', 'error');
-            }
-        }
-
-        function importData() {
-            document.getElementById('importFile').click();
-        }
-
-        async function handleImport(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            try {
-                const text = await file.text();
-                const data = JSON.parse(text);
-                
-                if (confirm('⚠️ This will overwrite existing data. Continue?')) {
-                    showMessage('🔄 Importing data...', 'info');
-                    // Import logic would go here
-                    showMessage('✅ Data imported successfully', 'success');
-                }
-            } catch (error) {
-                showMessage('❌ Invalid import file', 'error');
-            }
-        }
-
-        function clearCache() {
-            if ('caches' in window) {
-                caches.keys().then(names => {
-                    names.forEach(name => caches.delete(name));
-                });
-            }
-            localStorage.clear();
-            sessionStorage.clear();
-            showMessage('✅ Cache cleared', 'success');
-        }
-
-        function checkForUpdates() {
-            if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-                navigator.serviceWorker.controller.postMessage({ command: 'skipWaiting' });
-                showMessage('🔄 Checking for updates...', 'info');
-                setTimeout(() => window.location.reload(), 1000);
-            } else {
-                showMessage('ℹ️ No updates available', 'info');
-            }
-        }
-
-        // Danger Zone Functions
-        async function resetAllBudgets() {
-            if (!confirm('⚠️ Reset all budget limits to default values?')) return;
-            
-            const defaultBudgets = {
-                'Food': 250, 'Transport': 120, 'Bills': 400, 
-                'Entertainment': 80, 'Shopping': 150, 'Healthcare': 80, 'Other': 100
-            };
-
-            if (useDemo) {
-                showMessage('🔄 Demo Mode: Would reset budgets in real version', 'info');
-                return;
-            }
-
-            let resetCount = 0;
-            for (const [category, limit] of Object.entries(defaultBudgets)) {
-                try {
-                    await fetch(`${SUPABASE_URL}/rest/v1/categories?name=eq.${category}`, {
-                        method: 'PATCH',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'apikey': SUPABASE_KEY,
-                            'Authorization': `Bearer ${SUPABASE_KEY}`
-                        },
-                        body: JSON.stringify({ budget_limit: limit })
-                    });
-                    resetCount++;
-                } catch (error) {
-                    console.error('Error resetting budget:', error);
-                }
-            }
-
-            showMessage(`✅ Reset ${resetCount} budgets to default`, 'success');
-            await refreshAll();
-        }
-
-        async function clearAllBuckets() {
-            if (!confirm('⚠️ Clear all bucket allocations? This cannot be undone!')) return;
-            
-            if (useDemo) {
-                showMessage('🔄 Demo Mode: Would clear buckets in real version', 'info');
-                return;
-            }
-
-            try {
-                await fetch(`${SUPABASE_URL}/rest/v1/buckets`, {
-                    method: 'PATCH',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'apikey': SUPABASE_KEY,
-                        'Authorization': `Bearer ${SUPABASE_KEY}`
-                    },
-                    body: JSON.stringify({ allocated_amount: 0 })
-                });
-
-                showMessage('✅ All buckets cleared', 'success');
-                await refreshAll();
-            } catch (error) {
-                showMessage('❌ Failed to clear buckets', 'error');
-            }
-        }
-
-        async function deleteAllTransactions() {
-            if (!confirm('⚠️ Delete ALL transactions? This cannot be undone!')) return;
-            if (!confirm('🚨 Are you ABSOLUTELY sure? This will delete your entire transaction history!')) return;
-            
-            if (useDemo) {
-                showMessage('🔄 Demo Mode: Would delete transactions in real version', 'info');
-                return;
-            }
-
-            try {
-                await fetch(`${SUPABASE_URL}/rest/v1/transactions`, {
-                    method: 'DELETE',
-                    headers: {
-                        'apikey': SUPABASE_KEY,
-                        'Authorization': `Bearer ${SUPABASE_KEY}`
-                    }
-                });
-
-                showMessage('✅ All transactions deleted', 'success');
-                await refreshAll();
-            } catch (error) {
-                showMessage('❌ Failed to delete transactions', 'error');
-            }
-        }
-
-        async function factoryReset() {
-            if (!confirm('🏭 FACTORY RESET: Delete ALL data and reset to defaults?')) return;
-            if (!confirm('🚨 FINAL WARNING: This will delete EVERYTHING! Continue?')) return;
-            
-            if (useDemo) {
-                showMessage('🔄 Demo Mode: Would factory reset in real version', 'info');
-                return;
-            }
-
-            try {
-                // Reset main account balance
-                await fetch(`${SUPABASE_URL}/rest/v1/accounts?name=eq.Main Account`, {
-                    method: 'PATCH',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'apikey': SUPABASE_KEY,
-                        'Authorization': `Bearer ${SUPABASE_KEY}`
-                    },
-                    body: JSON.stringify({ balance: 0 })
-                });
-
-                // Clear all buckets
-                await fetch(`${SUPABASE_URL}/rest/v1/buckets`, {
-                    method: 'PATCH',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'apikey': SUPABASE_KEY,
-                        'Authorization': `Bearer ${SUPABASE_KEY}`
-                    },
-                    body: JSON.stringify({ allocated_amount: 0 })
-                });
-
-                // Delete all transactions
-                await fetch(`${SUPABASE_URL}/rest/v1/transactions`, {
-                    method: 'DELETE',
-                    headers: {
-                        'apikey': SUPABASE_KEY,
-                        'Authorization': `Bearer ${SUPABASE_KEY}`
-                    }
-                });
-
-                // Reset budgets
-                await resetAllBudgets();
-
-                // Clear local storage
-                localStorage.clear();
-
-                showMessage('🏭 Factory reset complete!', 'success');
-                setTimeout(() => window.location.reload(), 2000);
-            } catch (error) {
-                showMessage('❌ Factory reset failed', 'error');
-            }
-        }<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -620,7 +7,20 @@
     <meta name="description" content="Personal Finance Dashboard">
     <meta name="theme-color" content="#667eea">
     <link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Personal Finance">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="application-name" content="Personal Finance">
+    
+    <!-- PWA Icons -->
+    <link rel="apple-touch-icon" sizes="192x192" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==">
+    <link rel="apple-touch-icon" sizes="512x512" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIlBlcnNvbmFsIEZpbmFuY2UgRGFzaGJvYXJkIiwKICAic2hvcnRfbmFtZSI6ICJGaW5hbmNlIiwKICAiZGVzY3JpcHRpb24iOiAiQUktUG93ZXJlZCBQZXJzb25hbCBGaW5hbmNlIE1hbmFnZW1lbnQiLAogICJzdGFydF91cmwiOiAiLyIsCiAgImRpc3BsYXkiOiAic3RhbmRhbG9uZSIsCiAgImJhY2tncm91bmRfY29sb3IiOiAiIzY2N2VlYSIsCiAgInRoZW1lX2NvbG9yIjogIiM2NjdlZWEiLAogICJvcmllbnRhdGlvbiI6ICJwb3J0cmFpdCIsCiAgImljb25zIjogWwogICAgewogICAgICAic3JjIjogImRhdGE6aW1hZ2UvcG5nO2Jhc2U2NCxpVkJPUncwS0dnb0FBQUFOU1VoRVVnQUFBQUVBQUFBQkNBWUFBQUFmRmNTSkFBQUFEVWxFUVZSNDJtTmsrTTlRRHdBRGhnR0FXalI5YXdBQUFBQkpSVTVFcmtKZ2dnPT0iLAogICAgICAic2l6ZXMiOiAiMTkyeDE5MiIsCiAgICAgICJ0eXBlIjogImltYWdlL3BuZyIKICAgIH0sCiAgICB7CiAgICAgICJzcmMiOiAiZGF0YTppbWFnZS9wbmc7YmFzZTY0LGlWQk9SdzBLR2dvQUFBQU5TVWhFVWdBQUFBRUFBQUFCQ0FZQUFBQWZGY1NKQUFBQURVY0VRVlI0Mm1OaytNOVFEd0FEaGdHQVdqUjlhd0FBQUFCSlJVNUVya0pnZ2c9PSIsCiAgICAgICJzaXplcyI6ICI1MTJ4NTEyIiwKICAgICAgInR5cGUiOiAiaW1hZ2UvcG5nIgogICAgfQogIF0sCiAgImNhdGVnb3JpZXMiOiBbImZpbmFuY2UiLCAicHJvZHVjdGl2aXR5Il0sCiAgImxhbmciOiAiZW4iCn0=">
     <style>
         * {
             margin: 0;
@@ -635,29 +35,130 @@
             color: #333;
         }
 
+        /* Login Screen Styles */
+        .login-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .login-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .login-title {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            color: #667eea;
+        }
+
+        .login-subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        /* Header */
+        .header {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            color: white;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-content h1 {
+            font-size: 2rem;
+            margin-bottom: 5px;
+        }
+
+        .header-content p {
+            opacity: 0.9;
+            font-size: 1rem;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            color: white;
+        }
+
+        .logout-btn {
+            background: rgba(220, 53, 69, 0.8);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        /* Navigation Tabs */
+        .nav-tabs {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            display: flex;
+            justify-content: center;
+            padding: 0;
+            margin: 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow-x: auto;
+        }
+
+        .nav-tab {
+            background: none;
+            border: none;
+            padding: 15px 25px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            color: #666;
+            transition: all 0.3s ease;
+            border-bottom: 3px solid transparent;
+            white-space: nowrap;
+        }
+
+        .nav-tab:hover {
+            background: rgba(102, 126, 234, 0.1);
+            color: #667eea;
+        }
+
+        .nav-tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        /* Main Container */
         .container {
             max-width: 1200px;
             margin: 0 auto;
             padding: 20px;
         }
 
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-            color: white;
+        /* Tab Content */
+        .tab-content {
+            display: none;
         }
 
-        .header h1 {
-            font-size: 2.5rem;
-            margin-bottom: 10px;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        .tab-content.active {
+            display: block;
         }
 
-        .header p {
-            font-size: 1.1rem;
-            opacity: 0.9;
-        }
-
+        /* Connection Status */
         .connection-status {
             text-align: center;
             padding: 15px;
@@ -678,6 +179,7 @@
             border: 2px solid #dc3545;
         }
 
+        /* Cards */
         .grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -715,6 +217,7 @@
             gap: 10px;
         }
 
+        /* Balance Card */
         .balance-card {
             background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
             color: white;
@@ -743,6 +246,7 @@
             display: block;
         }
 
+        /* Forms */
         .input-group {
             margin-bottom: 15px;
         }
@@ -769,6 +273,7 @@
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
 
+        /* Buttons */
         .btn {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
@@ -807,7 +312,12 @@
             font-size: 0.9rem;
         }
 
-        .bucket-item {
+        .btn-danger {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        }
+
+        /* List Items */
+        .list-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -817,17 +327,18 @@
             margin-bottom: 10px;
         }
 
-        .bucket-info h4 {
+        .list-item h4 {
             margin: 0;
             color: #333;
         }
 
-        .bucket-amount {
+        .list-amount {
             font-weight: 600;
             color: #667eea;
             text-align: right;
         }
 
+        /* Progress Bar */
         .progress-bar {
             width: 100%;
             height: 8px;
@@ -843,45 +354,27 @@
             transition: width 0.3s ease;
         }
 
-        .category-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px;
-            border-bottom: 1px solid #eee;
-        }
-
-        .category-item:last-child {
-            border-bottom: none;
-        }
-
-        .spending-amount {
-            font-weight: 600;
-            text-align: right;
-        }
-
-        .alert-item {
+        /* Messages */
+        .message {
             padding: 15px;
-            background: rgba(245, 87, 108, 0.1);
-            border-left: 4px solid #f5576c;
-            border-radius: 0 8px 8px 0;
-            margin-bottom: 10px;
+            border-radius: 8px;
+            margin: 10px 0;
+            animation: slideIn 0.3s ease;
         }
 
-        .alert-title {
-            font-weight: 600;
-            margin-bottom: 5px;
-            color: #d63384;
+        .success {
+            background: rgba(25, 135, 84, 0.1);
+            color: #198754;
         }
 
-        .alert-message {
-            font-size: 0.9rem;
-            color: #666;
+        .error {
+            background: rgba(220, 53, 69, 0.1);
+            color: #dc3545;
         }
 
-        .status-icon {
-            font-size: 1.2rem;
-            margin-right: 8px;
+        .info {
+            background: rgba(13, 110, 253, 0.1);
+            color: #0d6efd;
         }
 
         .loading {
@@ -890,83 +383,7 @@
             color: #666;
         }
 
-        .error {
-            background: rgba(220, 53, 69, 0.1);
-            color: #dc3545;
-            padding: 15px;
-            border-radius: 8px;
-            margin: 10px 0;
-        }
-
-        .success {
-            background: rgba(25, 135, 84, 0.1);
-            color: #198754;
-            padding: 15px;
-            border-radius: 8px;
-            margin: 10px 0;
-        }
-
-        .info {
-            background: rgba(13, 110, 253, 0.1);
-            color: #0d6efd;
-            padding: 15px;
-            border-radius: 8px;
-            margin: 10px 0;
-        }
-
-        .settings-panel {
-            position: fixed;
-            top: 0;
-            right: -400px;
-            width: 400px;
-            height: 100vh;
-            background: white;
-            box-shadow: -5px 0 20px rgba(0,0,0,0.3);
-            transition: right 0.3s ease;
-            z-index: 1000;
-            padding: 20px;
-            overflow-y: auto;
-        }
-
-        .settings-panel.open {
-            right: 0;
-        }
-
-        .settings-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background: rgba(0,0,0,0.5);
-            z-index: 999;
-            display: none;
-        }
-
-        .settings-overlay.show {
-            display: block;
-        }
-
-        .settings-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 30px;
-            padding-bottom: 15px;
-            border-bottom: 2px solid #eee;
-        }
-
-        .close-settings {
-            background: #dc3545;
-            color: white;
-            border: none;
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            cursor: pointer;
-            font-size: 18px;
-        }
-
+        /* Settings */
         .settings-section {
             margin-bottom: 30px;
             padding: 20px;
@@ -989,397 +406,497 @@
             color: #dc3545;
         }
 
-        .btn-danger {
-            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
-        }
-
-        .settings-toggle {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 998;
-            background: rgba(255, 255, 255, 0.9);
-            backdrop-filter: blur(10px);
-            border: none;
-            padding: 12px;
-            border-radius: 50%;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-            cursor: pointer;
-            font-size: 1.2rem;
-        }
-
+        /* Responsive */
         @media (max-width: 768px) {
-            .settings-panel {
-                width: 100vw;
-                right: -100vw;
+            .nav-tabs {
+                flex-wrap: nowrap;
+                overflow-x: auto;
             }
+            
+            .nav-tab {
+                flex-shrink: 0;
+                padding: 12px 20px;
+                font-size: 0.9rem;
+            }
+            
+            .balance-amount {
+                font-size: 2rem;
+            }
+            
+            .grid {
+                grid-template-columns: 1fr;
+            }
+
+            .header {
+                flex-direction: column;
+                gap: 10px;
+            }
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(-100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        /* Hide main app initially */
+        .main-app {
+            display: none;
+        }
+
+        .main-app.authenticated {
+            display: block;
         }
     </style>
 </head>
 <body>
-    <div class="container">
+    <!-- Login Screen -->
+    <div id="loginScreen" class="login-container">
+        <div class="login-card">
+            <div class="login-title">💰 Personal Finance</div>
+            <div class="login-subtitle">Secure Login Required</div>
+            
+            <form id="loginForm" onsubmit="handleLogin(event)">
+                <div class="input-group">
+                    <label>Username</label>
+                    <input type="text" id="username" required autocomplete="username">
+                </div>
+                <div class="input-group">
+                    <label>Password</label>
+                    <input type="password" id="password" required autocomplete="current-password">
+                </div>
+                <button type="submit" class="btn">🔐 Login</button>
+            </form>
+
+            <div style="margin-top: 20px; padding: 15px; background: rgba(13, 110, 253, 0.1); border-radius: 8px; font-size: 0.9rem;">
+                <strong>Default Credentials:</strong><br>
+                Username: admin<br>
+                Password: admin123<br>
+                <em>Change these in Settings after login!</em>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Application -->
+    <div id="mainApp" class="main-app">
+        <!-- Header -->
         <div class="header">
-            <h1>💰 Personal Finance Dashboard</h1>
-            <p>AI-Powered Financial Management</p>
-        </div>
-
-        <!-- Settings Toggle -->
-        <button class="settings-toggle" onclick="toggleSettings()">⚙️</button>
-
-        <!-- Settings Overlay -->
-        <div class="settings-overlay" id="settingsOverlay" onclick="closeSettings()"></div>
-
-        <!-- Settings Panel -->
-        <div class="settings-panel" id="settingsPanel">
-            <div class="settings-header">
-                <h2>⚙️ Settings</h2>
-                <button class="close-settings" onclick="closeSettings()">×</button>
+            <div class="header-content">
+                <h1>💰 Personal Finance Dashboard</h1>
+                <p>AI-Powered Financial Management</p>
             </div>
-
-            <!-- AI Configuration -->
-            <div class="settings-section">
-                <h3>🤖 AI Configuration</h3>
-                <div class="input-group">
-                    <label>OpenAI API Key</label>
-                    <input type="password" id="openaiApiKey" placeholder="sk-proj-..." value="">
-                    <small style="color: #666; font-size: 0.9rem;">Get your key from: <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com</a></small>
-                </div>
-                <button class="btn" onclick="saveOpenAIKey()">💾 Save API Key</button>
-                <button class="btn btn-secondary" onclick="testAI()" style="margin-top: 10px;">🧪 Test AI</button>
-            </div>
-
-            <!-- Account Management -->
-            <div class="settings-section">
-                <h3>🏦 Account Management</h3>
-                <div class="input-group">
-                    <label>Set Main Account Balance</label>
-                    <input type="number" id="setBalance" placeholder="1500.00" step="0.01">
-                </div>
-                <button class="btn" onclick="updateMainBalance()">💰 Update Balance</button>
-                
-                <div style="margin-top: 20px;">
-                    <div class="input-group">
-                        <label>Add New Account</label>
-                        <input type="text" id="newAccountName" placeholder="Savings Account">
-                    </div>
-                    <div class="input-group">
-                        <label>Account Type</label>
-                        <select id="newAccountType">
-                            <option value="checking">Checking</option>
-                            <option value="savings">Savings</option>
-                            <option value="credit">Credit Card</option>
-                            <option value="cash">Cash</option>
-                        </select>
-                    </div>
-                    <div class="input-group">
-                        <label>Initial Balance</label>
-                        <input type="number" id="newAccountBalance" placeholder="0.00" step="0.01">
-                    </div>
-                    <button class="btn btn-secondary" onclick="addNewAccount()">➕ Add Account</button>
-                </div>
-            </div>
-
-            <!-- Budget Settings -->
-            <div class="settings-section">
-                <h3>📊 Budget Settings</h3>
-                <div id="budgetSettings">
-                    <div class="loading">Loading categories...</div>
-                </div>
-                <button class="btn" onclick="saveBudgetSettings()">💾 Save Budgets</button>
-            </div>
-
-            <!-- Bucket Settings -->
-            <div class="settings-section">
-                <h3>🪣 Bucket Targets</h3>
-                <div id="bucketSettings">
-                    <div class="loading">Loading buckets...</div>
-                </div>
-                <button class="btn" onclick="saveBucketSettings()">💾 Save Targets</button>
-            </div>
-
-            <!-- Data Management -->
-            <div class="settings-section">
-                <h3>📁 Data Management</h3>
-                <button class="btn btn-secondary" onclick="exportData()">📤 Export Data</button>
-                <button class="btn btn-secondary" onclick="importData()" style="margin-top: 10px;">📥 Import Data</button>
-                <input type="file" id="importFile" accept=".json" style="display: none;" onchange="handleImport(event)">
-            </div>
-
-            <!-- PWA Settings -->
-            <div class="settings-section">
-                <h3>📱 App Settings</h3>
-                <button class="btn btn-secondary" onclick="clearCache()">🗑️ Clear Cache</button>
-                <button class="btn btn-secondary" onclick="checkForUpdates()" style="margin-top: 10px;">🔄 Check Updates</button>
-                <div style="margin-top: 15px; padding: 10px; background: rgba(0,0,0,0.05); border-radius: 5px; font-size: 0.9rem;">
-                    <div>📱 <strong>Install Status:</strong> <span id="installStatus">Checking...</span></div>
-                    <div>🔄 <strong>Last Updated:</strong> <span id="lastUpdated">Unknown</span></div>
-                </div>
-            </div>
-
-            <!-- Danger Zone -->
-            <div class="settings-section danger-zone">
-                <h3>⚠️ Danger Zone</h3>
-                <p style="margin-bottom: 15px; color: #666;">These actions cannot be undone!</p>
-                <button class="btn btn-danger" onclick="resetAllBudgets()">🔄 Reset All Budgets</button>
-                <button class="btn btn-danger" onclick="clearAllBuckets()" style="margin-top: 10px;">🗑️ Clear All Buckets</button>
-                <button class="btn btn-danger" onclick="deleteAllTransactions()" style="margin-top: 10px;">💥 Delete All Transactions</button>
-                <button class="btn btn-danger" onclick="factoryReset()" style="margin-top: 10px;">🏭 Factory Reset</button>
+            <div class="user-info">
+                <span id="currentUser">Welcome!</span>
+                <button class="logout-btn" onclick="logout()">🚪 Logout</button>
             </div>
         </div>
 
-        <div id="connectionStatus" class="connection-status demo-mode">
-            🔄 Connecting to Supabase...
+        <!-- Navigation Tabs -->
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="showTab('dashboard', this)">📊 Dashboard</button>
+            <button class="nav-tab" onclick="showTab('transactions', this)">💳 Transactions</button>
+            <button class="nav-tab" onclick="showTab('buckets', this)">🪣 Buckets</button>
+            <button class="nav-tab" onclick="showTab('debts', this)">💳 Debts</button>
+            <button class="nav-tab" onclick="showTab('accounts', this)">🏦 Accounts</button>
+            <button class="nav-tab" onclick="showTab('reports', this)">📈 Reports</button>
+            <button class="nav-tab" onclick="showTab('settings', this)">⚙️ Settings</button>
         </div>
 
-        <div class="grid">
-            <!-- Balance Overview -->
-            <div class="card balance-card">
-                <div class="card-title">
-                    <span>🏦 Account Balance</span>
-                </div>
-                <div class="balance-amount" id="totalBalance">€0.00</div>
-                <div class="balance-breakdown">
-                    <div class="breakdown-item">
-                        <span class="breakdown-amount" id="allocatedAmount">€0.00</span>
-                        <div>Allocated</div>
+        <div class="container">
+            <!-- Connection Status -->
+            <div id="connectionStatus" class="connection-status demo-mode">
+                🔄 Connecting to Supabase...
+            </div>
+
+            <!-- Dashboard Tab -->
+            <div id="dashboard" class="tab-content active">
+                <div class="grid">
+                    <!-- Balance Overview -->
+                    <div class="card balance-card">
+                        <div class="card-title">
+                            <span>🏦 Account Balance</span>
+                        </div>
+                        <div class="balance-amount" id="totalBalance">€0.00</div>
+                        <div class="balance-breakdown">
+                            <div class="breakdown-item">
+                                <span class="breakdown-amount" id="allocatedAmount">€0.00</span>
+                                <div>Allocated</div>
+                            </div>
+                            <div class="breakdown-item">
+                                <span class="breakdown-amount" id="unallocatedAmount">€0.00</span>
+                                <div>Available</div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="breakdown-item">
-                        <span class="breakdown-amount" id="unallocatedAmount">€0.00</span>
-                        <div>Available</div>
+
+                    <!-- Quick Actions -->
+                    <div class="card">
+                        <div class="card-title">
+                            <span>⚡ Quick Actions</span>
+                        </div>
+                        <div class="input-group">
+                            <label>Amount (€)</label>
+                            <input type="number" id="quickAmount" placeholder="25.50" step="0.01">
+                        </div>
+                        <div class="input-group">
+                            <label>Description</label>
+                            <input type="text" id="quickDescription" placeholder="Coffee at Starbucks">
+                        </div>
+                        <div class="input-group">
+                            <label>Category</label>
+                            <select id="quickCategory">
+                                <option value="Food">🍕 Food</option>
+                                <option value="Transport">🚗 Transport</option>
+                                <option value="Bills">📄 Bills</option>
+                                <option value="Entertainment">🎬 Entertainment</option>
+                                <option value="Shopping">🛍️ Shopping</option>
+                                <option value="Healthcare">🏥 Healthcare</option>
+                                <option value="Other">📦 Other</option>
+                            </select>
+                        </div>
+                        <button class="btn" onclick="addExpense()">Add Expense</button>
+                        <button class="btn btn-secondary" onclick="addIncome()" style="margin-top: 10px;">Add Income</button>
+                    </div>
+
+                    <!-- Monthly Spending -->
+                    <div class="card">
+                        <div class="card-title">
+                            <span>📊 Monthly Spending</span>
+                            <button class="btn btn-small" onclick="refreshSpending()">↻</button>
+                        </div>
+                        <div id="spendingContainer">
+                            <div class="loading">Loading spending data...</div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Alerts -->
+                    <div class="card">
+                        <div class="card-title">
+                            <span>🔔 Active Alerts</span>
+                            <button class="btn btn-small" onclick="checkAlerts()">Check</button>
+                        </div>
+                        <div id="alertsContainer">
+                            <div class="loading">Loading alerts...</div>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- AI-Powered Quick Actions -->
-            <div class="card">
-                <div class="card-title">
-                    <span>🤖 AI-Powered Expense Entry</span>
-                </div>
-                <div class="input-group">
-                    <label>Natural Language Input</label>
-                    <textarea id="aiExpenseInput" placeholder="Try: 'I spent 23.50 on coffee at Starbucks this morning' or 'Paid 45 euros for gas yesterday'" rows="2"></textarea>
-                </div>
-                <button class="btn" onclick="processAIExpense()">🤖 Parse with AI</button>
-                
-                <div style="margin: 20px 0; border-top: 1px solid #eee; padding-top: 20px;">
-                    <div class="input-group">
-                        <label>Amount (€)</label>
-                        <input type="number" id="quickAmount" placeholder="25.50" step="0.01">
+            <!-- Transactions Tab -->
+            <div id="transactions" class="tab-content">
+                <div class="grid">
+                    <!-- AI Expense Entry -->
+                    <div class="card">
+                        <div class="card-title">
+                            <span>🤖 AI-Powered Expense Entry</span>
+                        </div>
+                        <div class="input-group">
+                            <label>Natural Language Input</label>
+                            <textarea id="aiExpenseInput" placeholder="Try: 'I spent 23.50 on coffee at Starbucks this morning'" rows="2"></textarea>
+                        </div>
+                        <button class="btn" onclick="processAIExpense()">🤖 Parse with AI</button>
                     </div>
-                    <div class="input-group">
-                        <label>Description</label>
-                        <input type="text" id="quickDescription" placeholder="Coffee at Starbucks">
+
+                    <!-- AI Assistant -->
+                    <div class="card">
+                        <div class="card-title">
+                            <span>💡 AI Financial Assistant</span>
+                        </div>
+                        <div class="input-group">
+                            <label>Ask your AI assistant</label>
+                            <textarea id="aiQuestion" placeholder="How much can I spend on entertainment this month?" rows="2"></textarea>
+                        </div>
+                        <button class="btn" onclick="askAIAssistant()">🤖 Ask AI</button>
+                        <div id="aiResponse" style="margin-top: 15px; padding: 15px; background: rgba(102, 126, 234, 0.1); border-radius: 8px; display: none;">
+                            <div class="card-title" style="margin-bottom: 10px;">
+                                <span>🤖 AI Response:</span>
+                            </div>
+                            <div id="aiResponseText"></div>
+                        </div>
                     </div>
-                    <div class="input-group">
-                        <label>Category</label>
-                        <select id="quickCategory">
-                            <option value="Food">🍕 Food</option>
-                            <option value="Transport">🚗 Transport</option>
-                            <option value="Bills">📄 Bills</option>
-                            <option value="Entertainment">🎬 Entertainment</option>
-                            <option value="Shopping">🛍️ Shopping</option>
-                            <option value="Healthcare">🏥 Healthcare</option>
-                            <option value="Other">📦 Other</option>
-                        </select>
-                    </div>
-                    <button class="btn" onclick="addExpense()">Add Expense</button>
-                    <button class="btn btn-secondary" onclick="addIncome()" style="margin-top: 10px;">Add Income</button>
                 </div>
             </div>
 
-            <!-- Buckets Overview -->
-            <div class="card">
-                <div class="card-title">
-                    <span>🪣 Bucket Overview</span>
-                    <button class="btn btn-small" onclick="refreshBuckets()">↻</button>
-                </div>
-                <div id="bucketsContainer">
-                    <div class="loading">Loading buckets...</div>
+            <!-- Buckets Tab -->
+            <div id="buckets" class="tab-content">
+                <div class="grid">
+                    <!-- Buckets Overview -->
+                    <div class="card">
+                        <div class="card-title">
+                            <span>🪣 Bucket Overview</span>
+                            <button class="btn btn-small" onclick="refreshBuckets()">↻</button>
+                        </div>
+                        <div id="bucketsContainer">
+                            <div class="loading">Loading buckets...</div>
+                        </div>
+                    </div>
+
+                    <!-- Bucket Allocation -->
+                    <div class="card">
+                        <div class="card-title">
+                            <span>💰 Allocate to Bucket</span>
+                        </div>
+                        <div class="input-group">
+                            <label>Bucket</label>
+                            <select id="bucketSelect">
+                                <option value="Emergency Fund">🚨 Emergency Fund</option>
+                                <option value="Flexible Buffer">🎯 Flexible Buffer</option>
+                                <option value="Yearly Payments">📅 Yearly Payments</option>
+                                <option value="Quarterly Payments">📊 Quarterly Payments</option>
+                                <option value="Fun Money">🎉 Fun Money</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label>Amount (€)</label>
+                            <input type="number" id="bucketAmount" placeholder="100.00" step="0.01">
+                        </div>
+                        <div class="input-group">
+                            <label>Description</label>
+                            <input type="text" id="bucketDescription" placeholder="Monthly savings">
+                        </div>
+                        <button class="btn" onclick="allocateToBucket()">Allocate Money</button>
+                    </div>
                 </div>
             </div>
 
-            <!-- Monthly Spending -->
-            <div class="card">
-                <div class="card-title">
-                    <span>📊 Monthly Spending</span>
-                </div>
-                <div id="spendingContainer">
-                    <div class="loading">Loading spending data...</div>
+            <!-- Debts Tab -->
+            <div id="debts" class="tab-content">
+                <div class="grid">
+                    <!-- Debt Overview -->
+                    <div class="card">
+                        <div class="card-title">
+                            <span>💳 Debt Management</span>
+                        </div>
+                        <div id="debtSummaryContainer">
+                            <div class="loading">Loading debts...</div>
+                        </div>
+                    </div>
+
+                    <!-- Make Payment -->
+                    <div class="card">
+                        <div class="card-title">
+                            <span>💰 Make Payment</span>
+                        </div>
+                        <div class="input-group">
+                            <label>Select Debt</label>
+                            <select id="debtSelect">
+                                <option value="">Select a debt...</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label>Payment Amount (€)</label>
+                            <input type="number" id="debtPaymentAmount" placeholder="100.00" step="0.01">
+                        </div>
+                        <button class="btn" onclick="makeDebtPayment()">💳 Pay Debt</button>
+                    </div>
+
+                    <!-- Add New Debt -->
+                    <div class="card">
+                        <div class="card-title">
+                            <span>➕ Add New Debt</span>
+                        </div>
+                        <div class="input-group">
+                            <label>Debt Name</label>
+                            <input type="text" id="newDebtName" placeholder="Credit Card, Car Loan, etc.">
+                        </div>
+                        <div class="input-group">
+                            <label>Total Amount (€)</label>
+                            <input type="number" id="newDebtTotal" placeholder="5000.00" step="0.01">
+                        </div>
+                        <div class="input-group">
+                            <label>Current Balance (€)</label>
+                            <input type="number" id="newDebtBalance" placeholder="2500.00" step="0.01">
+                        </div>
+                        <div class="input-group">
+                            <label>Minimum Payment (€)</label>
+                            <input type="number" id="newDebtMinPayment" placeholder="150.00" step="0.01">
+                        </div>
+                        <div class="input-group">
+                            <label>Due Day (1-31)</label>
+                            <input type="number" id="newDebtDueDay" placeholder="15" min="1" max="31">
+                        </div>
+                        <div class="input-group">
+                            <label>Interest Rate (%)</label>
+                            <input type="number" id="newDebtInterest" placeholder="18.5" step="0.1">
+                        </div>
+                        <button class="btn" onclick="addNewDebt()">➕ Add Debt</button>
+                    </div>
                 </div>
             </div>
 
-            <!-- Bucket Allocation -->
-            <div class="card">
-                <div class="card-title">
-                    <span>💰 Allocate to Bucket</span>
-                </div>
-                <div class="input-group">
-                    <label>Bucket</label>
-                    <select id="bucketSelect">
-                        <option value="Emergency Fund">🚨 Emergency Fund</option>
-                        <option value="Flexible Buffer">🎯 Flexible Buffer</option>
-                        <option value="Yearly Payments">📅 Yearly Payments</option>
-                        <option value="Quarterly Payments">📊 Quarterly Payments</option>
-                        <option value="Fun Money">🎉 Fun Money</option>
-                    </select>
-                </div>
-                <div class="input-group">
-                    <label>Amount (€)</label>
-                    <input type="number" id="bucketAmount" placeholder="100.00" step="0.01">
-                </div>
-                <div class="input-group">
-                    <label>Description</label>
-                    <input type="text" id="bucketDescription" placeholder="Monthly savings">
-                </div>
-                <button class="btn" onclick="allocateToBucket()">Allocate Money</button>
-            </div>
+            <!-- Accounts Tab -->
+            <div id="accounts" class="tab-content">
+                <div class="grid">
+                    <!-- Account Overview -->
+                    <div class="card">
+                        <div class="card-title">
+                            <span>🏦 All Accounts</span>
+                            <button class="btn btn-small" onclick="refreshAccounts()">↻</button>
+                        </div>
+                        <div id="accountsContainer">
+                            <div class="loading">Loading accounts...</div>
+                        </div>
+                    </div>
 
-            <!-- Debt Management -->
-            <div class="card">
-                <div class="card-title">
-                    <span>💳 Debt Management</span>
-                </div>
-                <div id="debtSummaryContainer">
-                    <div class="loading">Loading debts...</div>
-                </div>
-                
-                <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee;">
-                    <h4 style="margin-bottom: 15px; color: #667eea;">💰 Make Payment</h4>
-                    <div class="input-group">
-                        <label>Select Debt</label>
-                        <select id="debtSelect">
-                            <option value="">Select a debt...</option>
-                        </select>
+                    <!-- Add New Account -->
+                    <div class="card">
+                        <div class="card-title">
+                            <span>➕ Add New Account</span>
+                        </div>
+                        <div class="input-group">
+                            <label>Account Name</label>
+                            <input type="text" id="newAccountName" placeholder="Savings Account, Credit Card, etc.">
+                        </div>
+                        <div class="input-group">
+                            <label>Account Type</label>
+                            <select id="newAccountType">
+                                <option value="checking">Checking Account</option>
+                                <option value="savings">Savings Account</option>
+                                <option value="credit">Credit Card</option>
+                                <option value="cash">Cash</option>
+                                <option value="investment">Investment</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label>Initial Balance (€)</label>
+                            <input type="number" id="newAccountBalance" placeholder="0.00" step="0.01">
+                        </div>
+                        <button class="btn" onclick="addNewAccount()">➕ Add Account</button>
                     </div>
-                    <div class="input-group">
-                        <label>Payment Amount (€)</label>
-                        <input type="number" id="debtPaymentAmount" placeholder="100.00" step="0.01">
-                    </div>
-                    <button class="btn btn-secondary" onclick="makeDebtPayment()">💳 Pay Debt</button>
-                </div>
 
-                <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee;">
-                    <h4 style="margin-bottom: 15px; color: #667eea;">➕ Add New Debt</h4>
-                    <div class="input-group">
-                        <label>Debt Name</label>
-                        <input type="text" id="newDebtName" placeholder="Credit Card, Car Loan, etc.">
+                    <!-- Category Management -->
+                    <div class="card">
+                        <div class="card-title">
+                            <span>📂 Category Management</span>
+                        </div>
+                        <div class="input-group">
+                            <label>New Category Name</label>
+                            <input type="text" id="newCategoryName" placeholder="Travel, Education, etc.">
+                        </div>
+                        <div class="input-group">
+                            <label>Default Budget Limit (€)</label>
+                            <input type="number" id="newCategoryBudget" placeholder="100.00" step="0.01">
+                        </div>
+                        <button class="btn" onclick="addNewCategory()">➕ Add Category</button>
+                        
+                        <div style="margin-top: 20px;">
+                            <h4>Existing Categories:</h4>
+                            <div id="categoriesContainer">
+                                <div class="loading">Loading categories...</div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="input-group">
-                        <label>Total Amount (€)</label>
-                        <input type="number" id="newDebtTotal" placeholder="5000.00" step="0.01">
-                    </div>
-                    <div class="input-group">
-                        <label>Current Balance (€)</label>
-                        <input type="number" id="newDebtBalance" placeholder="2500.00" step="0.01">
-                    </div>
-                    <div class="input-group">
-                        <label>Minimum Payment (€)</label>
-                        <input type="number" id="newDebtMinPayment" placeholder="150.00" step="0.01">
-                    </div>
-                    <div class="input-group">
-                        <label>Due Day (1-31)</label>
-                        <input type="number" id="newDebtDueDay" placeholder="15" min="1" max="31">
-                    </div>
-                    <div class="input-group">
-                        <label>Interest Rate (%)</label>
-                        <input type="number" id="newDebtInterest" placeholder="18.5" step="0.1">
-                    </div>
-                    <button class="btn" onclick="addNewDebt()">➕ Add Debt</button>
                 </div>
             </div>
 
-            <!-- Fixed Payments -->
-            <div class="card">
-                <div class="card-title">
-                    <span>📅 Fixed Payments</span>
-                    <button class="btn btn-small" onclick="refreshFixedPayments()">↻</button>
-                </div>
-                <div id="fixedPaymentsContainer">
-                    <div class="loading">Loading fixed payments...</div>
-                </div>
+            <!-- Reports Tab -->
+            <div id="reports" class="tab-content">
+                <div class="grid">
+                    <!-- AI Budget Insights -->
+                    <div class="card">
+                        <div class="card-title">
+                            <span>📊 AI Budget Insights</span>
+                            <button class="btn btn-small" onclick="getAIInsights()">🤖 Analyze</button>
+                        </div>
+                        <div id="aiInsights">
+                            <div class="loading">Click "Analyze" to get AI-powered budget insights</div>
+                        </div>
+                    </div>
 
-                <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee;">
-                    <h4 style="margin-bottom: 15px; color: #667eea;">➕ Add Fixed Payment</h4>
+                    <!-- Monthly Report -->
+                    <div class="card">
+                        <div class="card-title">
+                            <span>📈 Monthly Report</span>
+                        </div>
+                        <div class="input-group">
+                            <label>Select Month</label>
+                            <select id="reportMonth">
+                                <option value="current">Current Month</option>
+                                <option value="previous">Previous Month</option>
+                            </select>
+                        </div>
+                        <button class="btn" onclick="generateReport()">Generate Report</button>
+                        <div id="monthlyReport" style="margin-top: 15px;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings Tab -->
+            <div id="settings" class="tab-content">
+                <!-- Security Settings -->
+                <div class="settings-section">
+                    <h3>🔐 Security Settings</h3>
                     <div class="input-group">
-                        <label>Payment Name</label>
-                        <input type="text" id="newPaymentName" placeholder="Rent, Phone Bill, etc.">
+                        <label>Change Password</label>
+                        <input type="password" id="newPassword" placeholder="Enter new password">
                     </div>
                     <div class="input-group">
-                        <label>Amount (€)</label>
-                        <input type="number" id="newPaymentAmount" placeholder="800.00" step="0.01">
+                        <label>Confirm Password</label>
+                        <input type="password" id="confirmPassword" placeholder="Confirm new password">
                     </div>
+                    <button class="btn" onclick="changePassword()">🔑 Change Password</button>
+                </div>
+
+                <!-- AI Configuration -->
+                <div class="settings-section">
+                    <h3>🤖 AI Configuration</h3>
                     <div class="input-group">
-                        <label>Due Day (1-31)</label>
-                        <input type="number" id="newPaymentDueDay" placeholder="1" min="1" max="31">
+                        <label>OpenAI API Key</label>
+                        <input type="password" id="openaiApiKey" placeholder="sk-proj-..." value="">
+                        <small style="color: #666; font-size: 0.9rem;">Get your key from: <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com</a></small>
                     </div>
+                    <button class="btn" onclick="saveOpenAIKey()">💾 Save API Key (Encrypted)</button>
+                    <button class="btn btn-secondary" onclick="testAI()" style="margin-top: 10px;">🧪 Test AI</button>
+                </div>
+
+                <!-- Account Management -->
+                <div class="settings-section">
+                    <h3>🏦 Account Management</h3>
                     <div class="input-group">
-                        <label>Category</label>
-                        <select id="newPaymentCategory">
-                            <option value="Bills">📄 Bills</option>
-                            <option value="Transport">🚗 Transport</option>
-                            <option value="Entertainment">🎬 Entertainment</option>
-                            <option value="Healthcare">🏥 Healthcare</option>
-                            <option value="Other">📦 Other</option>
-                        </select>
+                        <label>Set Main Account Balance</label>
+                        <input type="number" id="setBalance" placeholder="1500.00" step="0.01">
                     </div>
-                    <button class="btn" onclick="addFixedPayment()">➕ Add Payment</button>
+                    <button class="btn" onclick="updateMainBalance()">💰 Update Balance</button>
                 </div>
-            </div>
 
-            <!-- AI Financial Assistant -->
-            <div class="card">
-                <div class="card-title">
-                    <span>💡 AI Financial Assistant</span>
-                </div>
-                <div class="input-group">
-                    <label>Ask your AI assistant</label>
-                    <textarea id="aiQuestion" placeholder="Try: 'How much can I spend on entertainment this month?' or 'Should I prioritize savings or debt payment?'" rows="2"></textarea>
-                </div>
-                <button class="btn" onclick="askAIAssistant()">🤖 Ask AI</button>
-                <div id="aiResponse" style="margin-top: 15px; padding: 15px; background: rgba(102, 126, 234, 0.1); border-radius: 8px; display: none;">
-                    <div class="card-title" style="margin-bottom: 10px;">
-                        <span>🤖 AI Response:</span>
+                <!-- Budget Settings -->
+                <div class="settings-section">
+                    <h3>📊 Budget Settings</h3>
+                    <div id="budgetSettings">
+                        <div class="loading">Loading categories...</div>
                     </div>
-                    <div id="aiResponseText"></div>
+                    <button class="btn" onclick="saveBudgetSettings()">💾 Save Budgets</button>
+                </div>
+
+                <!-- Data Management -->
+                <div class="settings-section">
+                    <h3>📁 Data Management</h3>
+                    <button class="btn btn-secondary" onclick="exportData()">📤 Export Data</button>
+                    <button class="btn btn-secondary" onclick="importData()" style="margin-top: 10px;">📥 Import Data</button>
+                    <input type="file" id="importFile" accept=".json" style="display: none;" onchange="handleImport(event)">
+                </div>
+
+                <!-- Session Management -->
+                <div class="settings-section">
+                    <h3>🕒 Session Management</h3>
+                    <div id="sessionInfo">
+                        <div class="loading">Loading session info...</div>
+                    </div>
+                    <button class="btn btn-secondary" onclick="viewActiveSessions()">👀 View Active Sessions</button>
+                    <button class="btn btn-danger" onclick="logoutAllSessions()" style="margin-top: 10px;">🚪 Logout All Sessions</button>
+                </div>
+
+                <!-- Danger Zone -->
+                <div class="settings-section danger-zone">
+                    <h3>⚠️ Danger Zone</h3>
+                    <p style="margin-bottom: 15px; color: #666;">These actions cannot be undone!</p>
+                    <button class="btn btn-danger" onclick="resetAllBudgets()">🔄 Reset All Budgets</button>
+                    <button class="btn btn-danger" onclick="deleteAllTransactions()" style="margin-top: 10px;">💥 Delete All Transactions</button>
+                    <button class="btn btn-danger" onclick="factoryReset()" style="margin-top: 10px;">🏭 Factory Reset</button>
                 </div>
             </div>
 
-            <!-- AI Budget Insights -->
-            <div class="card">
-                <div class="card-title">
-                    <span>📊 AI Budget Insights</span>
-                    <button class="btn btn-small" onclick="getAIInsights()">🤖 Analyze</button>
-                </div>
-                <div id="aiInsights">
-                    <div class="loading">Click "Analyze" to get AI-powered budget insights</div>
-                </div>
-            </div>
-            <!-- Alerts -->
-            <div class="card">
-                <div class="card-title">
-                    <span>🔔 Active Alerts</span>
-                    <button class="btn btn-small" onclick="checkAlerts()">Check Alerts</button>
-                </div>
-                <div id="alertsContainer">
-                    <div class="loading">Loading alerts...</div>
-                </div>
-            </div>
-        </div>
-
-        <div id="messageContainer"></div>
-
-        <!-- Setup Instructions -->
-        <div class="card" id="setupInstructions" style="display: none;">
-            <div class="card-title">
-                <span>🔧 Setup Required</span>
-            </div>
-            <div class="info">
-                <strong>To use real data, enable CORS in Supabase:</strong><br>
-                1. Go to: <a href="https://supabase.com/dashboard/project/fbbsfxcftgoetfvnjevt" target="_blank">Supabase Dashboard</a><br>
-                2. Settings → API → CORS Origins<br>
-                3. Add: <code>*</code><br>
-                4. Save and refresh this page
-            </div>
+            <!-- Message Container -->
+            <div id="messageContainer"></div>
         </div>
     </div>
 
@@ -1388,17 +905,209 @@
         const SUPABASE_URL = 'https://fbbsfxcftgoetfvnjevt.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZiYnNmeGNmdGdvZXRmdm5qZXZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc4NTM3MzksImV4cCI6MjA3MzQyOTczOX0.SgVG5AAJTcMC8wRJBvIjAibGc6oO126Wj6nK-XALvxY';
         
-        // OpenAI Configuration - User can set this in settings
-        let OPENAI_API_KEY = localStorage.getItem('openai_api_key') || '';
-        
+        // Session management
+        let currentUser = null;
+        let sessionToken = null;
+        let userId = null;
         let isConnected = false;
         let useDemo = false;
-        let showSettings = false;
 
-        // OpenAI Integration with user-configurable API key
+        // Security Functions
+        function handleLogin(event) {
+            event.preventDefault();
+            login();
+        }
+
+        async function login() {
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+
+            if (!username || !password) {
+                showMessage('Please enter both username and password', 'error');
+                return;
+            }
+
+            try {
+                const result = await callFunction('login_user', {
+                    p_username: username,
+                    p_password: password,
+                    p_ip_address: await getClientIP(),
+                    p_user_agent: navigator.userAgent
+                });
+
+                if (result.success) {
+                    sessionToken = result.session_token;
+                    userId = result.user_id;
+                    currentUser = result.username;
+                    
+                    // Store session securely
+                    sessionStorage.setItem('session_token', sessionToken);
+                    sessionStorage.setItem('user_id', userId);
+                    sessionStorage.setItem('username', currentUser);
+                    
+                    showLoginSuccess();
+                } else {
+                    showMessage(result.error || 'Login failed', 'error');
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                showMessage('Login failed. Please try again.', 'error');
+            }
+        }
+
+        async function logout() {
+            if (sessionToken) {
+                try {
+                    await callFunction('logout_user', { p_session_token: sessionToken });
+                } catch (error) {
+                    console.error('Logout error:', error);
+                }
+            }
+            
+            // Clear session data
+            sessionStorage.clear();
+            sessionToken = null;
+            userId = null;
+            currentUser = null;
+            
+            // Show login screen
+            document.getElementById('loginScreen').style.display = 'flex';
+            document.getElementById('mainApp').classList.remove('authenticated');
+            
+            showMessage('Logged out successfully', 'info');
+        }
+
+        async function changePassword() {
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            if (!newPassword || !confirmPassword) {
+                showMessage('Please fill in both password fields', 'error');
+                return;
+            }
+
+            if (newPassword !== confirmPassword) {
+                showMessage('Passwords do not match', 'error');
+                return;
+            }
+
+            if (newPassword.length < 6) {
+                showMessage('Password must be at least 6 characters long', 'error');
+                return;
+            }
+
+            try {
+                const hashedPassword = await hashPassword(newPassword);
+                
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/app_users?id=eq.${userId}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'apikey': SUPABASE_KEY,
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify({ password_hash: hashedPassword })
+                });
+
+                if (response.ok) {
+                    showMessage('Password changed successfully', 'success');
+                    document.getElementById('newPassword').value = '';
+                    document.getElementById('confirmPassword').value = '';
+                } else {
+                    showMessage('Failed to change password', 'error');
+                }
+            } catch (error) {
+                showMessage('Error changing password', 'error');
+            }
+        }
+
+        async function hashPassword(password) {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(password + 'salt_key_2025');
+            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        async function validateSession() {
+            const token = sessionStorage.getItem('session_token');
+            if (!token) return false;
+
+            try {
+                const result = await callFunction('validate_session', { p_session_token: token });
+                
+                if (result.valid) {
+                    sessionToken = token;
+                    userId = result.user_id;
+                    currentUser = result.username;
+                    return true;
+                }
+            } catch (error) {
+                console.error('Session validation error:', error);
+            }
+            
+            return false;
+        }
+
+        function showLoginSuccess() {
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('mainApp').classList.add('authenticated');
+            document.getElementById('currentUser').textContent = `Welcome, ${currentUser}!`;
+            
+            showMessage(`Welcome back, ${currentUser}!`, 'success');
+            initializeApp();
+        }
+
+        // Tab Management
+        function showTab(tabName, element) {
+            const tabContents = document.querySelectorAll('.tab-content');
+            tabContents.forEach(tab => tab.classList.remove('active'));
+
+            const navTabs = document.querySelectorAll('.nav-tab');
+            navTabs.forEach(tab => tab.classList.remove('active'));
+
+            document.getElementById(tabName).classList.add('active');
+            element.classList.add('active');
+
+            loadTabData(tabName);
+        }
+
+        function loadTabData(tabName) {
+            switch(tabName) {
+                case 'dashboard':
+                    refreshAll();
+                    break;
+                case 'buckets':
+                    loadBuckets();
+                    break;
+                case 'debts':
+                    loadDebts();
+                    break;
+                case 'accounts':
+                    loadAccounts();
+                    loadCategories();
+                    break;
+                case 'settings':
+                    loadSettingsData();
+                    break;
+            }
+        }
+
+        // OpenAI Integration with secure API key storage
         async function callOpenAI(prompt, maxTokens = 150) {
-            if (!OPENAI_API_KEY || OPENAI_API_KEY === '') {
-                return '🤖 Please configure your OpenAI API key in Settings ⚙️ to enable AI features.';
+            let apiKey;
+            
+            try {
+                apiKey = await callFunction('get_user_setting', {
+                    p_user_id: userId,
+                    p_setting_key: 'openai_api_key'
+                });
+            } catch (error) {
+                return 'Please configure your OpenAI API key in Settings to enable AI features.';
+            }
+
+            if (!apiKey) {
+                return 'Please configure your OpenAI API key in Settings to enable AI features.';
             }
 
             try {
@@ -1406,7 +1115,7 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${OPENAI_API_KEY}`
+                        'Authorization': `Bearer ${apiKey}`
                     },
                     body: JSON.stringify({
                         model: 'gpt-3.5-turbo',
@@ -1417,15 +1126,12 @@
                 });
 
                 if (!response.ok) {
-                    const errorData = await response.text();
-                    console.error('OpenAI API Error:', response.status, errorData);
-                    
                     if (response.status === 401) {
-                        return '🔑 Invalid OpenAI API key. Please check your key in Settings ⚙️';
+                        return 'Invalid OpenAI API key. Please check your key in Settings';
                     } else if (response.status === 429) {
-                        return '⏱️ AI rate limit exceeded. Please try again in a moment.';
+                        return 'AI rate limit exceeded. Please try again in a moment.';
                     } else {
-                        return `🤖 AI service error (${response.status}). Please try again.`;
+                        return `AI service error (${response.status}). Please try again.`;
                     }
                 }
 
@@ -1433,78 +1139,60 @@
                 return data.choices[0].message.content.trim();
             } catch (error) {
                 console.error('OpenAI Error:', error);
-                return '🌐 Unable to reach AI service. Check your internet connection.';
+                return 'Unable to reach AI service. Check your internet connection.';
             }
         }
 
-        // AI Expense Parser
-        async function parseExpenseWithAI(input) {
-            const prompt = `Parse this expense input and return ONLY a JSON object with these exact fields:
-{
-  "amount": number,
-  "description": "string",
-  "category": "Food|Transport|Bills|Entertainment|Shopping|Healthcare|Other",
-  "confidence": number between 0-1
-}
+        async function testAI() {
+            showMessage('Testing AI connection...', 'info');
+            const result = await callOpenAI('Say "AI is working!" in a cheerful way.');
+            showMessage(`AI Test Result: ${result}`, result.includes('working') || result.includes('cheerful') ? 'success' : 'error');
+        }
 
-Input: "${input}"
-
-Rules:
-- Extract numeric amount (convert to decimal)
-- Create clear description
-- Choose most appropriate category
-- Set confidence based on clarity
-- Return ONLY valid JSON, no explanations`;
+        // Secure Settings Functions
+        async function saveOpenAIKey() {
+            const apiKey = document.getElementById('openaiApiKey').value.trim();
+            
+            if (!apiKey) {
+                showMessage('Please enter an API key', 'error');
+                return;
+            }
 
             try {
-                const result = await callOpenAI(prompt, 100);
-                if (!result) return null;
+                const result = await callFunction('save_user_setting', {
+                    p_user_id: userId,
+                    p_setting_key: 'openai_api_key',
+                    p_setting_value: apiKey,
+                    p_is_encrypted: true
+                });
 
-                // Parse JSON response
-                const parsed = JSON.parse(result);
-                
-                // Validate required fields
-                if (parsed.amount && parsed.description && parsed.category && parsed.confidence) {
-                    return parsed;
+                if (result.success) {
+                    showMessage('OpenAI API key saved securely', 'success');
+                    document.getElementById('openaiApiKey').value = '';
+                } else {
+                    showMessage('Failed to save API key', 'error');
                 }
-                return null;
             } catch (error) {
-                console.error('AI parsing error:', error);
-                return null;
+                showMessage('Error saving API key', 'error');
             }
         }
 
-        // AI Financial Assistant
-        async function getAIFinancialAdvice(context, question) {
-            const prompt = `You are Ali's personal finance assistant. Based on his financial data, provide helpful advice.
-
-Context:
-${JSON.stringify(context, null, 2)}
-
-Question: ${question}
-
-Provide a helpful, personalized response in 2-3 sentences. Focus on actionable advice using his actual data. Use euros (€) for amounts.`;
-
-            return await callOpenAI(prompt, 200);
+        async function loadOpenAIKey() {
+            try {
+                const apiKey = await callFunction('get_user_setting', {
+                    p_user_id: userId,
+                    p_setting_key: 'openai_api_key'
+                });
+                
+                if (apiKey) {
+                    document.getElementById('openaiApiKey').placeholder = 'API key is configured';
+                }
+            } catch (error) {
+                console.error('Error loading API key:', error);
+            }
         }
 
-        // AI Budget Analysis
-        async function getAIBudgetInsights(spendingData) {
-            const prompt = `Analyze this monthly spending data and provide 2-3 key insights:
-
-${JSON.stringify(spendingData, null, 2)}
-
-Focus on:
-- Overspending warnings
-- Positive trends
-- Actionable recommendations
-
-Keep it concise and practical. Use euros (€) for amounts.`;
-
-            return await callOpenAI(prompt, 180);
-        }
-
-        // Test connection first
+        // Connection and API Functions
         async function testConnection() {
             try {
                 const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/test_connection`, {
@@ -1520,14 +1208,12 @@ Keep it concise and practical. Use euros (€) for amounts.`;
                 });
                 
                 if (response.ok) {
-                    const result = await response.json();
-                    console.log('✅ Supabase connection successful:', result);
                     isConnected = true;
                     updateConnectionStatus(true);
                     return true;
                 }
             } catch (error) {
-                console.log('❌ Supabase connection failed:', error);
+                console.log('Supabase connection failed:', error);
                 isConnected = false;
                 useDemo = true;
                 updateConnectionStatus(false);
@@ -1537,20 +1223,16 @@ Keep it concise and practical. Use euros (€) for amounts.`;
 
         function updateConnectionStatus(connected) {
             const statusEl = document.getElementById('connectionStatus');
-            const setupEl = document.getElementById('setupInstructions');
             
             if (connected) {
                 statusEl.className = 'connection-status connected';
-                statusEl.innerHTML = '✅ Connected to Supabase - Real data active';
-                setupEl.style.display = 'none';
+                statusEl.innerHTML = 'Connected to Supabase - Real data active';
             } else {
                 statusEl.className = 'connection-status demo-mode';
-                statusEl.innerHTML = '🔒 Demo Mode - Sample data shown (CORS blocked)';
-                setupEl.style.display = 'block';
+                statusEl.innerHTML = 'Demo Mode - Sample data shown (CORS blocked)';
             }
         }
 
-        // API Helper Functions with improved error handling
         async function callFunction(functionName, params = {}) {
             if (useDemo) {
                 showMessage('Demo mode - real transactions disabled', 'info');
@@ -1587,7 +1269,7 @@ Keep it concise and practical. Use euros (€) for amounts.`;
 
         async function queryTable(tableName, params = '') {
             if (useDemo) {
-                return [];
+                return getDemoData(tableName);
             }
 
             try {
@@ -1613,257 +1295,75 @@ Keep it concise and practical. Use euros (€) for amounts.`;
             }
         }
 
-        // Demo mode with realistic data
-        function useDemoMode() {
-            console.log('Using demo mode with sample data');
-            
-            // Sample data based on your real structure
-            const mockBalance = {
-                total_balance: '1924.50',
-                total_allocated: '1000.00',
-                unallocated_balance: '924.50'
+        // Demo Data
+        function getDemoData(tableName) {
+            const demoData = {
+                'balance_breakdown': [{
+                    total_balance: 1924.50,
+                    total_allocated: 1000.00,
+                    unallocated_balance: 924.50
+                }],
+                'bucket_overview_formatted': [
+                    {
+                        name: 'Emergency Fund',
+                        status_icon: '🔴',
+                        allocated_amount: '€500.00',
+                        target_amount: '€2,500.00',
+                        progress_percent: '20.0'
+                    },
+                    {
+                        name: 'Flexible Buffer',
+                        status_icon: '🔴',
+                        allocated_amount: '€150.00',
+                        target_amount: '€400.00',
+                        progress_percent: '37.5'
+                    }
+                ],
+                'monthly_spending_formatted': [
+                    {
+                        category: 'Entertainment',
+                        status_icon: '🚨',
+                        spent: '€80.00',
+                        budget_limit: '€80.00',
+                        percent_used: '100.0'
+                    },
+                    {
+                        category: 'Food',
+                        status_icon: '✅',
+                        spent: '€125.50',
+                        budget_limit: '€250.00',
+                        percent_used: '50.2'
+                    }
+                ],
+                'debt_summary': [
+                    { 
+                        name: 'Credit Card', 
+                        remaining: 1850, 
+                        minimum_payment: 150, 
+                        due_day: 25, 
+                        months_to_payoff: 12.3 
+                    }
+                ],
+                'categories': [
+                    { name: 'Food', budget_limit: 250 },
+                    { name: 'Transport', budget_limit: 120 },
+                    { name: 'Bills', budget_limit: 400 },
+                    { name: 'Entertainment', budget_limit: 80 },
+                    { name: 'Shopping', budget_limit: 150 },
+                    { name: 'Healthcare', budget_limit: 80 },
+                    { name: 'Other', budget_limit: 100 }
+                ],
+                'accounts': [
+                    { name: 'Main Account', type: 'checking', balance: 1924.50 },
+                    { name: 'Savings', type: 'savings', balance: 5000.00 },
+                    { name: 'Credit Card', type: 'credit', balance: -1850.00 }
+                ]
             };
             
-            const mockBuckets = [
-                {
-                    name: 'Emergency Fund',
-                    status_icon: '🔴',
-                    allocated_amount: '€500.00',
-                    target_amount: '€2,500.00',
-                    progress_percent: '20.0'
-                },
-                {
-                    name: 'Flexible Buffer',
-                    status_icon: '🔴',
-                    allocated_amount: '€150.00',
-                    target_amount: '€400.00',
-                    progress_percent: '37.5'
-                },
-                {
-                    name: 'Yearly Payments',
-                    status_icon: '🔴',
-                    allocated_amount: '€300.00',
-                    target_amount: '€1,000.00',
-                    progress_percent: '30.0'
-                },
-                {
-                    name: 'Fun Money',
-                    status_icon: '🔴',
-                    allocated_amount: '€50.00',
-                    target_amount: '€150.00',
-                    progress_percent: '33.3'
-                }
-            ];
-            
-            const mockSpending = [
-                {
-                    category: 'Entertainment',
-                    status_icon: '🚨',
-                    spent: '€80.00',
-                    budget_limit: '€80.00',
-                    percent_used: '100.0'
-                },
-                {
-                    category: 'Food',
-                    status_icon: '✅',
-                    spent: '€125.50',
-                    budget_limit: '€250.00',
-                    percent_used: '50.2'
-                },
-                {
-                    category: 'Transport',
-                    status_icon: '✅',
-                    spent: '€45.00',
-                    budget_limit: '€120.00',
-                    percent_used: '37.5'
-                }
-            ];
-            
-            // Load demo data
-            document.getElementById('totalBalance').textContent = formatEuro(parseFloat(mockBalance.total_balance));
-            document.getElementById('allocatedAmount').textContent = formatEuro(parseFloat(mockBalance.total_allocated));
-            document.getElementById('unallocatedAmount').textContent = formatEuro(parseFloat(mockBalance.unallocated_balance));
-            
-            document.getElementById('bucketsContainer').innerHTML = mockBuckets.map(bucket => `
-                <div class="bucket-item">
-                    <div class="bucket-info">
-                        <h4>${bucket.status_icon} ${bucket.name}</h4>
-                        <div class="progress-bar">
-                            <div class="progress-fill" style="width: ${bucket.progress_percent || 0}%"></div>
-                        </div>
-                    </div>
-                    <div class="bucket-amount">
-                        ${bucket.allocated_amount} / ${bucket.target_amount}
-                        <br><small>(${bucket.progress_percent || 0}%)</small>
-                    </div>
-                </div>
-            `).join('');
-            
-            document.getElementById('spendingContainer').innerHTML = mockSpending.map(category => `
-                <div class="category-item">
-                    <div>
-                        <span class="status-icon">${category.status_icon}</span>
-                        <strong>${category.category}</strong>
-                    </div>
-                    <div class="spending-amount">
-                        ${category.spent} / ${category.budget_limit}
-                        <br><small>(${category.percent_used}%)</small>
-                    </div>
-                </div>
-            `).join('');
-            
-            document.getElementById('alertsContainer').innerHTML = `
-                <div class="alert-item">
-                    <div class="alert-title">🚨 Budget Alert: Entertainment</div>
-                    <div class="alert-message">⚠️ You've spent €80.00/€80.00 (100.0%) of your Entertainment budget this month. 8 days left in month.</div>
-                </div>
-                <div style="text-align: center; color: #666; padding: 10px; font-size: 0.9rem;">
-                    This is sample data. Enable CORS for real alerts.
-                </div>
-            `;
+            return demoData[tableName] || [];
         }
 
-        // UI Functions
-        function showMessage(message, type = 'success') {
-            const container = document.getElementById('messageContainer');
-            const messageDiv = document.createElement('div');
-            messageDiv.className = type;
-            messageDiv.textContent = message;
-            container.appendChild(messageDiv);
-            
-            setTimeout(() => {
-                messageDiv.remove();
-            }, 5000);
-        }
-
-        function formatEuro(amount) {
-            return new Intl.NumberFormat('de-DE', {
-                style: 'currency',
-                currency: 'EUR'
-            }).format(amount);
-        }
-
-        // AI-Enhanced Core Functions
-        async function processAIExpense() {
-            const input = document.getElementById('aiExpenseInput').value.trim();
-            
-            if (!input) {
-                showMessage('Please enter an expense description', 'error');
-                return;
-            }
-
-            // Show loading state
-            const parseBtn = document.querySelector('button[onclick="processAIExpense()"]');
-            parseBtn.textContent = '🤖 Processing...';
-            parseBtn.disabled = true;
-
-            try {
-                const aiResult = await parseExpenseWithAI(input);
-                
-                if (aiResult && aiResult.confidence > 0.6) {
-                    // Fill form with AI results
-                    document.getElementById('quickAmount').value = aiResult.amount;
-                    document.getElementById('quickDescription').value = aiResult.description;
-                    document.getElementById('quickCategory').value = aiResult.category;
-                    
-                    showMessage(`🤖 AI parsed: €${aiResult.amount} for ${aiResult.description} (${aiResult.category}) - Confidence: ${Math.round(aiResult.confidence * 100)}%`, 'success');
-                    
-                    // Auto-submit if confidence is very high
-                    if (aiResult.confidence > 0.8) {
-                        setTimeout(() => addExpense(), 1000);
-                    }
-                } else {
-                    showMessage('🤖 AI could not parse that expense. Please fill manually.', 'error');
-                }
-            } catch (error) {
-                console.error('AI processing error:', error);
-                showMessage('🤖 AI processing failed. Please try again.', 'error');
-            } finally {
-                parseBtn.textContent = '🤖 Parse with AI';
-                parseBtn.disabled = false;
-            }
-        }
-
-        async function askAIAssistant() {
-            const question = document.getElementById('aiQuestion').value.trim();
-            
-            if (!question) {
-                showMessage('Please enter a question', 'error');
-                return;
-            }
-
-            const responseDiv = document.getElementById('aiResponse');
-            const responseText = document.getElementById('aiResponseText');
-            
-            responseDiv.style.display = 'block';
-            responseText.textContent = '🤖 Thinking...';
-
-            try {
-                // Get current financial context
-                const context = {
-                    balance: document.getElementById('totalBalance').textContent,
-                    allocated: document.getElementById('allocatedAmount').textContent,
-                    available: document.getElementById('unallocatedAmount').textContent,
-                    month: new Date().toLocaleDateString('en', { month: 'long' })
-                };
-
-                const advice = await getAIFinancialAdvice(context, question);
-                
-                if (advice) {
-                    responseText.textContent = advice;
-                } else {
-                    responseText.textContent = '🤖 Sorry, I could not process your question. Please try rephrasing it.';
-                }
-            } catch (error) {
-                console.error('AI assistant error:', error);
-                responseText.textContent = '🤖 Sorry, there was an error processing your question.';
-            }
-        }
-
-        async function getAIInsights() {
-            const insightsContainer = document.getElementById('aiInsights');
-            insightsContainer.innerHTML = '<div class="loading">🤖 AI is analyzing your spending patterns...</div>';
-
-            try {
-                // Get spending data for AI analysis
-                let spendingData = [];
-                
-                if (useDemo) {
-                    spendingData = [
-                        { category: 'Entertainment', spent: 80, budget: 80, percent: 100 },
-                        { category: 'Food', spent: 125.50, budget: 250, percent: 50.2 },
-                        { category: 'Transport', spent: 45, budget: 120, percent: 37.5 }
-                    ];
-                } else {
-                    const data = await queryTable('monthly_spending_formatted');
-                    spendingData = data.map(item => ({
-                        category: item.category,
-                        spent: parseFloat(item.spent.replace('€', '')),
-                        budget: parseFloat(item.budget_limit.replace('€', '')),
-                        percent: item.percent_used
-                    }));
-                }
-
-                const insights = await getAIBudgetInsights(spendingData);
-                
-                if (insights) {
-                    insightsContainer.innerHTML = `
-                        <div style="padding: 15px; background: rgba(102, 126, 234, 0.1); border-radius: 8px; line-height: 1.6;">
-                            <div class="card-title" style="margin-bottom: 10px;">
-                                <span>🤖 AI Analysis:</span>
-                            </div>
-                            ${insights.split('\n').map(line => line.trim() ? `<p style="margin-bottom: 8px;">${line}</p>` : '').join('')}
-                        </div>
-                    `;
-                } else {
-                    insightsContainer.innerHTML = '<div class="error">🤖 Could not generate insights. Please try again.</div>';
-                }
-            } catch (error) {
-                console.error('AI insights error:', error);
-                insightsContainer.innerHTML = '<div class="error">🤖 Error generating insights. Please try again.</div>';
-            }
-        }
-        // Enhanced Core Functions
+        // Core Functions
         async function addExpense() {
             const amount = parseFloat(document.getElementById('quickAmount').value);
             const description = document.getElementById('quickDescription').value;
@@ -1875,11 +1375,9 @@ Keep it concise and practical. Use euros (€) for amounts.`;
             }
 
             if (useDemo) {
-                showMessage(`🤖 Demo Mode: Would add €${amount} expense for ${description} (${category})`, 'info');
-                // Clear form
+                showMessage(`Demo Mode: Would add €${amount} expense for ${description} (${category})`, 'info');
                 document.getElementById('quickAmount').value = '';
                 document.getElementById('quickDescription').value = '';
-                document.getElementById('aiExpenseInput').value = '';
                 return;
             }
 
@@ -1892,11 +1390,9 @@ Keep it concise and practical. Use euros (€) for amounts.`;
                 });
 
                 if (result.success) {
-                    showMessage(`✅ Expense added: ${formatEuro(amount)} for ${description}`, 'success');
-                    // Clear form
+                    showMessage(`Expense added: ${formatEuro(amount)} for ${description}`, 'success');
                     document.getElementById('quickAmount').value = '';
                     document.getElementById('quickDescription').value = '';
-                    document.getElementById('aiExpenseInput').value = '';
                     await refreshAll();
                 } else {
                     showMessage(`Error: ${result.error || 'Failed to add expense'}`, 'error');
@@ -1940,523 +1436,241 @@ Keep it concise and practical. Use euros (€) for amounts.`;
             }
         }
 
-        async function allocateToBucket() {
-            const bucketName = document.getElementById('bucketSelect').value;
-            const amount = parseFloat(document.getElementById('bucketAmount').value);
-            const description = document.getElementById('bucketDescription').value;
+        // Account Management Functions
+        async function addNewAccount() {
+            const name = document.getElementById('newAccountName').value.trim();
+            const type = document.getElementById('newAccountType').value;
+            const balance = parseFloat(document.getElementById('newAccountBalance').value) || 0;
 
-            if (!amount) {
-                showMessage('Please enter an amount', 'error');
+            if (!name) {
+                showMessage('Please enter account name', 'error');
                 return;
             }
 
             if (useDemo) {
-                showMessage('Demo Mode: Bucket allocation would work in real version', 'info');
+                showMessage(`Demo Mode: Would add account "${name}" with €${balance} balance`, 'info');
                 return;
             }
 
             try {
-                const result = await callFunction('allocate_to_bucket', {
-                    bucket_name: bucketName,
-                    amount: amount,
-                    description: description || 'Manual allocation'
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/accounts`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'apikey': SUPABASE_KEY,
+                        'Authorization': `Bearer ${SUPABASE_KEY}`,
+                        'Prefer': 'return=minimal'
+                    },
+                    body: JSON.stringify({ name, type, balance })
                 });
 
-                if (result.success) {
-                    showMessage(`Allocated ${formatEuro(amount)} to ${bucketName}`, 'success');
-                    document.getElementById('bucketAmount').value = '';
-                    document.getElementById('bucketDescription').value = '';
-                    await refreshAll();
+                if (response.ok) {
+                    showMessage(`Account "${name}" added successfully`, 'success');
+                    document.getElementById('newAccountName').value = '';
+                    document.getElementById('newAccountBalance').value = '';
+                    await loadAccounts();
                 } else {
-                    showMessage(`Error: ${result.error || 'Failed to allocate money'}`, 'error');
+                    showMessage('Failed to add account', 'error');
                 }
             } catch (error) {
-                showMessage('Failed to allocate money', 'error');
+                showMessage('Error adding account', 'error');
             }
         }
 
-        async function checkAlerts() {
+        async function addNewCategory() {
+            const name = document.getElementById('newCategoryName').value.trim();
+            const budgetLimit = parseFloat(document.getElementById('newCategoryBudget').value) || 0;
+
+            if (!name) {
+                showMessage('Please enter category name', 'error');
+                return;
+            }
+
             if (useDemo) {
-                showMessage('Demo Mode: Alert checking would work in real version', 'info');
+                showMessage(`Demo Mode: Would add category "${name}" with €${budgetLimit} budget`, 'info');
                 return;
             }
 
             try {
-                const result = await callFunction('check_all_alerts');
-                if (result.success) {
-                    showMessage(`Alert check complete. ${result.total_alerts_created || 0} new alerts created.`, 'success');
-                    await loadAlerts();
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/categories`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'apikey': SUPABASE_KEY,
+                        'Authorization': `Bearer ${SUPABASE_KEY}`,
+                        'Prefer': 'return=minimal'
+                    },
+                    body: JSON.stringify({ name, budget_limit: budgetLimit })
+                });
+
+                if (response.ok) {
+                    showMessage(`Category "${name}" added successfully`, 'success');
+                    document.getElementById('newCategoryName').value = '';
+                    document.getElementById('newCategoryBudget').value = '';
+                    await loadCategories();
+                } else {
+                    showMessage('Failed to add category', 'error');
                 }
             } catch (error) {
-                showMessage('Failed to check alerts', 'error');
+                showMessage('Error adding category', 'error');
             }
         }
 
-        // Data Loading Functions (Updated with Debts)
+        // Data Loading Functions
+        async function loadAccounts() {
+            try {
+                const data = await queryTable('accounts');
+                const container = document.getElementById('accountsContainer');
+                
+                if (data && data.length > 0) {
+                    container.innerHTML = data.map(account => `
+                        <div class="list-item">
+                            <div>
+                                <h4>${getAccountIcon(account.type)} ${account.name}</h4>
+                                <small>Type: ${capitalizeFirst(account.type)}</small>
+                            </div>
+                            <div class="list-amount">
+                                ${formatEuro(account.balance)}
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = '<div class="loading">No accounts found</div>';
+                }
+            } catch (error) {
+                document.getElementById('accountsContainer').innerHTML = '<div class="error">Failed to load accounts</div>';
+            }
+        }
+
+        async function loadCategories() {
+            try {
+                const data = await queryTable('categories');
+                const container = document.getElementById('categoriesContainer');
+                
+                if (data && data.length > 0) {
+                    container.innerHTML = data.map(category => `
+                        <div class="list-item">
+                            <div>
+                                <h4>${category.name}</h4>
+                            </div>
+                            <div class="list-amount">
+                                Budget: ${formatEuro(category.budget_limit)}
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = '<div class="loading">No categories found</div>';
+                }
+            } catch (error) {
+                document.getElementById('categoriesContainer').innerHTML = '<div class="error">Failed to load categories</div>';
+            }
+        }
+
+        async function refreshAccounts() {
+            document.getElementById('accountsContainer').innerHTML = '<div class="loading">Refreshing...</div>';
+            await loadAccounts();
+        }
+
+        // Helper Functions
+        function getAccountIcon(type) {
+            const icons = {
+                'checking': '🏦',
+                'savings': '💰',
+                'credit': '💳',
+                'cash': '💵',
+                'investment': '📈'
+            };
+            return icons[type] || '🏦';
+        }
+
+        function capitalizeFirst(str) {
+            return str.charAt(0).toUpperCase() + str.slice(1);
+        }
+
+        function formatEuro(amount) {
+            return new Intl.NumberFormat('de-DE', {
+                style: 'currency',
+                currency: 'EUR'
+            }).format(amount);
+        }
+
+        function showMessage(message, type = 'success') {
+            const container = document.getElementById('messageContainer');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+            messageDiv.innerHTML = `
+                ${message}
+                <span style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); opacity: 0.7; cursor: pointer;">×</span>
+            `;
+            messageDiv.style.position = 'relative';
+            messageDiv.style.cursor = 'pointer';
+            
+            messageDiv.onclick = () => messageDiv.remove();
+            container.appendChild(messageDiv);
+            
+            const autoRemoveTime = type === 'error' ? 8000 : 5000;
+            setTimeout(() => {
+                if (messageDiv.parentNode) {
+                    messageDiv.remove();
+                }
+            }, autoRemoveTime);
+        }
+
+        async function getClientIP() {
+            try {
+                const response = await fetch('https://api.ipify.org?format=json');
+                const data = await response.json();
+                return data.ip;
+            } catch (error) {
+                return 'unknown';
+            }
+        }
+
+        // Initialize App
+        async function initializeApp() {
+            const connected = await testConnection();
+            
+            if (connected) {
+                showMessage('Connected! Loading your financial data...', 'success');
+                await refreshAll();
+                await loadDebts();
+                setInterval(refreshAll, 30000);
+            } else {
+                await loadBalance();
+                await loadSpending();
+                await loadBuckets();
+                await loadDebts();
+                await loadAlerts();
+                showMessage('Demo mode - Real data available after CORS setup', 'info');
+            }
+
+            await loadOpenAIKey();
+        }
+
+        // Placeholder functions for missing functionality
+        async function refreshAll() {
+            await Promise.all([
+                loadBalance(),
+                loadSpending(),
+                loadAlerts()
+            ]);
+        }
+
         async function loadBalance() {
-            if (useDemo) return;
-
-            try {
-                const data = await queryTable('balance_breakdown');
-                if (data && data.length > 0) {
-                    const balance = data[0];
-                    document.getElementById('totalBalance').textContent = formatEuro(balance.total_balance);
-                    document.getElementById('allocatedAmount').textContent = formatEuro(balance.total_allocated);
-                    document.getElementById('unallocatedAmount').textContent = formatEuro(balance.unallocated_balance);
-                }
-            } catch (error) {
-                console.error('Failed to load balance:', error);
+            if (useDemo) {
+                const balance = getDemoData('balance_breakdown')[0];
+                document.getElementById('totalBalance').textContent = formatEuro(balance.total_balance);
+                document.getElementById('allocatedAmount').textContent = formatEuro(balance.total_allocated);
+                document.getElementById('unallocatedAmount').textContent = formatEuro(balance.unallocated_balance);
+                return;
             }
-        }
-
-        async function loadDebts() {
-            try {
-                const container = document.getElementById('debtSummaryContainer');
-                const select = document.getElementById('debtSelect');
-                
-                if (useDemo) {
-                    // Demo debt data
-                    const mockDebts = [
-                        { name: 'Credit Card', remaining: 1850, minimum_payment: 150, due_day: 25, months_to_payoff: 12.3 }
-                    ];
-                    
-                    container.innerHTML = mockDebts.map(debt => `
-                        <div class="category-item" style="background: rgba(220, 53, 69, 0.1); border-radius: 8px; margin-bottom: 10px;">
-                            <div>
-                                <strong>💳 ${debt.name}</strong>
-                                <br><small>Due: ${debt.due_day}th • Min: €${debt.minimum_payment}</small>
-                            </div>
-                            <div class="spending-amount" style="color: #dc3545;">
-                                €${debt.remaining}
-                                <br><small>(~${debt.months_to_payoff} months)</small>
-                            </div>
-                        </div>
-                    `).join('');
-                    
-                    select.innerHTML = '<option value="">Select a debt...</option>' + 
-                        mockDebts.map(debt => `<option value="${debt.name}">${debt.name}</option>`).join('');
-                    return;
-                }
-
-                const data = await queryTable('debt_summary');
-                
-                if (data && data.length > 0) {
-                    container.innerHTML = data.map(debt => `
-                        <div class="category-item" style="background: rgba(220, 53, 69, 0.1); border-radius: 8px; margin-bottom: 10px;">
-                            <div>
-                                <strong>💳 ${debt.name}</strong>
-                                <br><small>Due: ${debt.due_day}th • Min: €${debt.minimum_payment}</small>
-                            </div>
-                            <div class="spending-amount" style="color: #dc3545;">
-                                €${debt.remaining}
-                                <br><small>(~${debt.months_to_payoff || 0} months)</small>
-                            </div>
-                        </div>
-                    `).join('');
-                    
-                    // Populate debt select dropdown
-                    select.innerHTML = '<option value="">Select a debt...</option>' + 
-                        data.map(debt => `<option value="${debt.name}">${debt.name} (€${debt.remaining})</option>`).join('');
-                } else {
-                    container.innerHTML = '<div style="text-align: center; color: #28a745; padding: 20px;">✅ No active debts</div>';
-                    select.innerHTML = '<option value="">No debts to pay</option>';
-                }
-            } catch (error) {
-                document.getElementById('debtSummaryContainer').innerHTML = '<div class="error">Failed to load debts</div>';
-            }
-        }
-
-        async function loadFixedPayments() {
-            try {
-                const container = document.getElementById('fixedPaymentsContainer');
-                
-                if (useDemo) {
-                    const mockPayments = [
-                        { name: 'Rent', amount: 800, due_day: 1, next_due_date: '2025-02-01' },
-                        { name: 'Phone Bill', amount: 45, due_day: 15, next_due_date: '2025-02-15' },
-                        { name: 'Internet', amount: 35, due_day: 20, next_due_date: '2025-02-20' }
-                    ];
-                    
-                    container.innerHTML = mockPayments.map(payment => `
-                        <div class="category-item">
-                            <div>
-                                <strong>📅 ${payment.name}</strong>
-                                <br><small>Due: ${payment.due_day}th of each month</small>
-                            </div>
-                            <div class="spending-amount">
-                                €${payment.amount}
-                                <br><small>Next: ${payment.next_due_date}</small>
-                            </div>
-                        </div>
-                    `).join('');
-                    return;
-                }
-
-                const data = await queryTable('upcoming_payments');
-                
-                if (data && data.length > 0) {
-                    container.innerHTML = data.map(payment => `
-                        <div class="category-item">
-                            <div>
-                                <strong>📅 ${payment.name}</strong>
-                                <br><small>Due: ${payment.due_day}th of each month</small>
-                            </div>
-                            <div class="spending-amount">
-                                €${payment.amount}
-                                <br><small>Next: ${payment.next_due_date}</small>
-                            </div>
-                        </div>
-                    `).join('');
-                } else {
-                    container.innerHTML = '<div style="text-align: center; color: #666; padding: 20px;">No fixed payments scheduled</div>';
-                }
-            } catch (error) {
-                document.getElementById('fixedPaymentsContainer').innerHTML = '<div class="error">Failed to load fixed payments</div>';
-            }
-        }
-
-        async function refreshFixedPayments() {
-            document.getElementById('fixedPaymentsContainer').innerHTML = '<div class="loading">Refreshing...</div>';
-            await loadFixedPayments();
-        }
-
-        async function loadBuckets() {
-            if (useDemo) return;
-
-            try {
-                const data = await queryTable('bucket_overview_formatted');
-                const container = document.getElementById('bucketsContainer');
-                
-                if (data && data.length > 0) {
-                    container.innerHTML = data.map(bucket => `
-                        <div class="bucket-item">
-                            <div class="bucket-info">
-                                <h4>${bucket.status_icon} ${bucket.name}</h4>
-                                <div class="progress-bar">
-                                    <div class="progress-fill" style="width: ${bucket.progress_percent || 0}%"></div>
-                                </div>
-                            </div>
-                            <div class="bucket-amount">
-                                ${bucket.allocated_amount} / ${bucket.target_amount}
-                                <br><small>(${bucket.progress_percent || 0}%)</small>
-                            </div>
-                        </div>
-                    `).join('');
-                } else {
-                    container.innerHTML = '<div class="loading">No buckets found</div>';
-                }
-            } catch (error) {
-                document.getElementById('bucketsContainer').innerHTML = '<div class="error">Failed to load buckets</div>';
-            }
+            // Real implementation would go here
         }
 
         async function loadSpending() {
-            if (useDemo) return;
-
             try {
                 const data = await queryTable('monthly_spending_formatted');
                 const container = document.getElementById('spendingContainer');
                 
                 if (data && data.length > 0) {
                     container.innerHTML = data.map(category => `
-                        <div class="category-item">
-                            <div>
-                                <span class="status-icon">${category.status_icon}</span>
-                                <strong>${category.category}</strong>
-                            </div>
-                            <div class="spending-amount">
-                                ${category.spent} / ${category.budget_limit}
-                                <br><small>(${category.percent_used}%)</small>
-                            </div>
-                        </div>
-                    `).join('');
-                } else {
-                    container.innerHTML = '<div class="loading">No spending data</div>';
-                }
-            } catch (error) {
-                document.getElementById('spendingContainer').innerHTML = '<div class="error">Failed to load spending</div>';
-            }
-        }
-
-        async function loadAlerts() {
-            if (useDemo) return;
-
-            try {
-                const data = await queryTable('alerts_to_send');
-                const container = document.getElementById('alertsContainer');
-                
-                if (data && data.length > 0) {
-                    container.innerHTML = data.map(alert => `
-                        <div class="alert-item">
-                            <div class="alert-title">${alert.priority_icon} ${alert.title}</div>
-                            <div class="alert-message">${alert.message}</div>
-                        </div>
-                    `).join('');
-                } else {
-                    container.innerHTML = '<div style="text-align: center; color: #28a745; padding: 20px;">✅ No pending alerts</div>';
-                }
-            } catch (error) {
-                document.getElementById('alertsContainer').innerHTML = '<div class="error">Failed to load alerts</div>';
-            }
-        }
-
-        async function refreshBuckets() {
-            document.getElementById('bucketsContainer').innerHTML = '<div class="loading">Refreshing...</div>';
-            await loadBuckets();
-        }
-
-        async function refreshAll() {
-            if (useDemo) return;
-            
-            await Promise.all([
-                loadBalance(),
-                loadBuckets(),
-                loadSpending(),
-                loadAlerts(),
-                loadDebts(),
-                loadFixedPayments()
-            ]);
-        }
-
-        // Initialize app with enhanced PWA features
-        document.addEventListener('DOMContentLoaded', async function() {
-            // Load saved OpenAI API key
-            OPENAI_API_KEY = localStorage.getItem('openai_api_key') || '';
-            
-            // Register Enhanced Service Worker for PWA
-            if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register(
-                    'data:text/javascript;base64,' + btoa(`
-                        const CACHE_NAME = 'finance-app-v1';
-                        const urlsToCache = ['/'];
-                        
-                        self.addEventListener('install', event => {
-                            event.waitUntil(
-                                caches.open(CACHE_NAME)
-                                    .then(cache => cache.addAll(urlsToCache))
-                            );
-                            self.skipWaiting();
-                        });
-                        
-                        self.addEventListener('fetch', event => {
-                            event.respondWith(
-                                caches.match(event.request)
-                                    .then(response => {
-                                        if (response) {
-                                            return response;
-                                        }
-                                        return fetch(event.request);
-                                    })
-                            );
-                        });
-                        
-                        self.addEventListener('activate', event => {
-                            event.waitUntil(
-                                caches.keys().then(cacheNames => {
-                                    return Promise.all(
-                                        cacheNames.map(cacheName => {
-                                            if (cacheName !== CACHE_NAME) {
-                                                return caches.delete(cacheName);
-                                            }
-                                        })
-                                    );
-                                })
-                            );
-                        });
-                        
-                        self.addEventListener('message', event => {
-                            if (event.data && event.data.command === 'skipWaiting') {
-                                self.skipWaiting();
-                            }
-                        });
-                    `)
-                )
-                .then(registration => {
-                    console.log('✅ Enhanced PWA Service Worker registered');
-                    
-                    // Show install prompt
-                    let deferredPrompt;
-                    window.addEventListener('beforeinstallprompt', (e) => {
-                        e.preventDefault();
-                        deferredPrompt = e;
-                        showInstallButton(deferredPrompt);
-                    });
-
-                    // Handle service worker updates
-                    registration.addEventListener('updatefound', () => {
-                        const newWorker = registration.installing;
-                        newWorker.addEventListener('statechange', () => {
-                            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                                showMessage('🔄 New version available! Tap to update.', 'info');
-                            }
-                        });
-                    });
-                })
-                .catch(error => console.log('PWA Service Worker registration failed:', error));
-            }
-
-            // Test Supabase connection
-            const connected = await testConnection();
-            
-            if (connected) {
-                showMessage('🚀 Connected! Loading your financial data...', 'success');
-                await refreshAll();
-                // Also load debts and fixed payments in demo mode
-                await loadDebts();
-                await loadFixedPayments();
-                setInterval(refreshAll, 30000);
-            } else {
-                useDemoMode();
-                await loadDebts();
-                await loadFixedPayments();
-                showMessage('📱 Demo mode - Real data available after CORS setup', 'info');
-            }
-
-            // Show AI status
-            if (OPENAI_API_KEY) {
-                showMessage('🤖 AI features enabled', 'success');
-            } else {
-                showMessage('⚙️ Configure AI in Settings for smart features', 'info');
-            }
-        });
-
-        // Enhanced PWA Install functionality
-        function showInstallButton(deferredPrompt) {
-            const installButton = document.createElement('button');
-            installButton.className = 'btn';
-            installButton.style.cssText = `
-                position: fixed; 
-                bottom: 20px; 
-                left: 20px; 
-                z-index: 1000; 
-                padding: 12px 20px; 
-                border-radius: 25px; 
-                box-shadow: 0 4px 20px rgba(102, 126, 234, 0.5);
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                color: white;
-                border: none;
-                font-weight: 600;
-                animation: pulse 2s infinite;
-            `;
-            installButton.innerHTML = '📱 Install App';
-            
-            // Add pulsing animation
-            const style = document.createElement('style');
-            style.textContent = `
-                @keyframes pulse {
-                    0% { transform: scale(1); }
-                    50% { transform: scale(1.05); }
-                    100% { transform: scale(1); }
-                }
-            `;
-            document.head.appendChild(style);
-            
-            installButton.onclick = async () => {
-                deferredPrompt.prompt();
-                const { outcome } = await deferredPrompt.userChoice;
-                if (outcome === 'accepted') {
-                    showMessage('✅ App installed successfully! Find it on your home screen.', 'success');
-                } else {
-                    showMessage('📱 You can install this app anytime from your browser menu', 'info');
-                }
-                installButton.remove();
-                style.remove();
-            };
-            document.body.appendChild(installButton);
-            
-            // Auto-hide after 10 seconds
-            setTimeout(() => {
-                if (installButton.parentNode) {
-                    installButton.remove();
-                    style.remove();
-                }
-            }, 10000);
-        }
-
-        // Enhanced message showing with better UX
-        function showMessage(message, type = 'success') {
-            const container = document.getElementById('messageContainer');
-            const messageDiv = document.createElement('div');
-            messageDiv.className = type;
-            messageDiv.style.cssText = `
-                margin: 10px 0;
-                padding: 15px;
-                border-radius: 8px;
-                animation: slideIn 0.3s ease;
-                position: relative;
-                cursor: pointer;
-            `;
-            messageDiv.innerHTML = `
-                ${message}
-                <span style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); opacity: 0.7;">×</span>
-            `;
-            
-            // Add slide-in animation
-            if (!document.querySelector('style[data-message-animations]')) {
-                const style = document.createElement('style');
-                style.setAttribute('data-message-animations', 'true');
-                style.textContent = `
-                    @keyframes slideIn {
-                        from { transform: translateX(-100%); opacity: 0; }
-                        to { transform: translateX(0); opacity: 1; }
-                    }
-                `;
-                document.head.appendChild(style);
-            }
-            
-            // Click to dismiss
-            messageDiv.onclick = () => messageDiv.remove();
-            
-            container.appendChild(messageDiv);
-            
-            // Auto-remove based on message type
-            const autoRemoveTime = type === 'error' ? 8000 : 5000;
-            setTimeout(() => {
-                if (messageDiv.parentNode) {
-                    messageDiv.style.animation = 'slideIn 0.3s ease reverse';
-                    setTimeout(() => messageDiv.remove(), 300);
-                }
-            }, autoRemoveTime);
-        }
-    </script>
-
-    <!-- Enhanced PWA Manifest and Features -->
-    <script>
-        // PWA features
-        if ('serviceWorker' in navigator) {
-            // Handle app updates
-            navigator.serviceWorker.addEventListener('controllerchange', () => {
-                showMessage('🔄 App updated! Reloading...', 'success');
-                setTimeout(() => window.location.reload(), 1000);
-            });
-        }
-
-        // Enhanced PWA detection
-        let isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
-                          window.navigator.standalone === true;
-        
-        if (isStandalone) {
-            console.log('✅ Running as installed PWA');
-            // Hide browser-specific elements when running as PWA
-            document.documentElement.style.setProperty('--pwa-mode', '1');
-        }
-
-        // Prevent zoom on double-tap (better mobile UX)
-        let lastTouchEnd = 0;
-        document.addEventListener('touchend', function (event) {
-            const now = (new Date()).getTime();
-            if (now - lastTouchEnd <= 300) {
-                event.preventDefault();
-            }
-            lastTouchEnd = now;
-        }, false);
-
-        // Handle PWA display mode changes
-        window.matchMedia('(display-mode: standalone)').addEventListener('change', (e) => {
-            if (e.matches) {
-                showMessage('✅ Now running as installed app!', 'success');
-            }
-        });
-    </script>
-</body>
-</html>

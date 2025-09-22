@@ -490,17 +490,9 @@
             </form>
 
             <div style="margin-top: 20px; padding: 15px; background: rgba(13, 110, 253, 0.1); border-radius: 8px; font-size: 0.9rem;">
-                <strong>Default Credentials:</strong><br>
+                <strong>Login Credentials:</strong><br>
                 Username: admin<br>
-                Password: admin123<br>
-                <em>Change these in Settings after login!</em>
-                
-                <!-- Debug button for testing -->
-                <div style="margin-top: 15px;">
-                    <button type="button" class="btn" onclick="debugLogin()" style="background: #28a745;">
-                        Debug: Force Login
-                    </button>
-                </div>
+                Password: admin123
             </div>
         </div>
     </div>
@@ -1372,7 +1364,11 @@
             showMessage(`AI Test Result: ${result}`, result.includes('working') || result.includes('cheerful') ? 'success' : 'error');
         }
 
-        // Secure Settings Functions
+        // Simplified session and security functions
+        async function changePassword() {
+            showMessage('Password change feature available in full version', 'info');
+        }
+
         async function saveOpenAIKey() {
             const apiKey = document.getElementById('openaiApiKey').value.trim();
             
@@ -1381,37 +1377,26 @@
                 return;
             }
 
-            try {
-                const result = await callFunction('save_user_setting', {
-                    p_user_id: userId,
-                    p_setting_key: 'openai_api_key',
-                    p_setting_value: apiKey,
-                    p_is_encrypted: true
-                });
-
-                if (result.success) {
-                    showMessage('OpenAI API key saved securely', 'success');
-                    document.getElementById('openaiApiKey').value = '';
-                } else {
-                    showMessage('Failed to save API key', 'error');
-                }
-            } catch (error) {
-                showMessage('Error saving API key', 'error');
-            }
+            // Store in session storage for demo
+            sessionStorage.setItem('openai_api_key', apiKey);
+            showMessage('OpenAI API key saved for this session', 'success');
+            document.getElementById('openaiApiKey').value = '';
         }
 
         async function loadOpenAIKey() {
+            const apiKey = sessionStorage.getItem('openai_api_key');
+            if (apiKey) {
+                document.getElementById('openaiApiKey').placeholder = 'API key is configured for this session';
+            }
+        }
+
+        async function getClientIP() {
             try {
-                const apiKey = await callFunction('get_user_setting', {
-                    p_user_id: userId,
-                    p_setting_key: 'openai_api_key'
-                });
-                
-                if (apiKey) {
-                    document.getElementById('openaiApiKey').placeholder = 'API key is configured';
-                }
+                const response = await fetch('https://api.ipify.org?format=json');
+                const data = await response.json();
+                return data.ip;
             } catch (error) {
-                console.error('Error loading API key:', error);
+                return 'unknown';
             }
         }
 

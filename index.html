@@ -1,0 +1,1883 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ali's Personal Finance</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        // Fixed Payments Management
+        async function loadFixedPayments() {
+            try {
+                const result = await callFunction('get_fixed_payments');
+                const container = document.getElementById('fixedPaymentsContainer');
+                
+                if (result && result.success && result.payments && result.payments.length > 0) {
+                    container.innerHTML = result.payments.map(payment => `
+                        <div class="list-item">
+                            <div>
+                                <strong>${payment.name}</strong>
+                                <br><small>Due: ${payment.due_day}th • ${payment.category} • Last paid: ${payment.last_paid || 'Never'}</small>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <div class="list-amount">${payment.formatted_amount}</div>
+                                <button class="btn btn-small" onclick="processFixedPayment('${payment.id}')" style="background: rgba(72, 187, 120, 0.8); padding: 4px 8px;">💳</button>
+                                <button class="btn btn-small" onclick="deleteFixedPayment('${payment.id}')" style="background: rgba(245, 101, 101, 0.8); padding: 4px 8px;">×</button>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = '<div class="loading">No fixed payments found</div>';
+                }
+            } catch (error) {
+                showMessage('Failed to load fixed payments', 'error');
+            }
+        }
+
+        async function addFixedPayment() {
+            const name = document.getElementById('fixedPaymentName').value;
+            const amount = document.getElementById('fixedPaymentAmount').value;
+            const category = document.getElementById('fixedPaymentCategory').value;
+            const dueDay = document.getElementById('fixedPaymentDueDay').value;
+            
+            if (!name || !amount || !dueDay) {
+                showMessage('Please fill in all fixed payment fields', 'error');
+                return;
+            }
+
+            try {
+                const result = await callFunction('add_fixed_payment', {
+                    payment_name: name,
+                    amount: parseFloat(amount),
+                    category_name: category,
+                    account_name: 'Main Account',
+                    due_day: parseInt(dueDay)
+                });
+
+                if (result && result.success) {
+                    showMessage(`✅ Fixed payment "${name}" added successfully`, 'success');
+                    clearFixedPaymentForm();
+                    await loadFixedPayments();
+                } else {
+                    showMessage(`Failed to add fixed payment: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showMessage('Failed to add fixed payment', 'error');
+            }
+        }
+
+        async function processFixedPayment(paymentId) {
+            if (!confirm('Process this fixed payment now?')) return;
+
+            try {
+                const result = await callFunction('process_fixed_payment', {
+                    payment_id: paymentId
+                });
+
+                if (result && result.success) {
+                    showMessage(`✅ ${result.message}`, 'success');
+                    await loadFixedPayments();
+                    await loadRealBalance();
+                    await loadRealSpending();
+                    await loadTransactions();
+                } else {
+                    showMessage(`Failed to process payment: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showMessage('Failed to process fixed payment', 'error');
+            }
+        }
+
+        async function deleteFixedPayment(paymentId) {
+            if (!confirm('Are you sure you want to delete this fixed payment?')) return;
+
+            try {
+                const result = await callFunction('delete_fixed_payment', {
+                    payment_id: paymentId
+                });
+
+                if (result && result.success) {
+                    showMessage('✅ Fixed payment deleted successfully', 'success');
+                    await loadFixedPayments();
+                } else {
+                    showMessage(`Failed to delete fixed payment: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showMessage('Failed to delete fixed payment', 'error');
+            }
+        }
+
+        function clearFixedPaymentForm() {
+            document.getElementById('fixedPaymentName').value = '';
+            document.getElementById('fixedPaymentAmount').value = '';
+            document.getElementById('fixedPaymentDueDay').value = '';
+        }
+
+        // Alert Management
+        async function loadAlertManagement() {
+            try {
+                const data = await queryTable('alerts', '?select=id,title,message,alert_type,priority,status,created_at&order=created_at.desc&limit=10');
+                const container = document.getElementById('alertManagementContainer');
+                
+                if (data && data.length > 0) {
+                    container.innerHTML = `
+                        <div style="max-height: 300px; overflow-y: auto;">
+                            ${data.map(alert => `
+                                <div class="list-item" style="background: rgba(${alert.status === 'pending' ? '245, 101, 101' : '74, 85, 104'}, 0.15);">
+                                    <div>
+                                        <strong>${alert.title}</strong>
+                                        <br><small>${alert.message}</small>
+                                        <br><small>${alert.alert_type} • ${alert.priority} • ${alert.status}</small>
+                                    </div>
+                                    <div style="display: flex; align-items: center; gap: 10px;">
+                                        ${alert.status === 'pending' ? `<button class="btn btn-small" onclick="markAlertRead('${alert.id}')" style="background: rgba(72, 187, 120, 0.8); padding: 4px 8px;">✓</button>` : ''}
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+                } else {
+                    container.innerHTML = '<div class="loading">No alerts found</div>';
+                }
+            } catch (error) {
+                showMessage('Failed to load alerts', 'error');
+            }
+        }
+
+        async function createCustomAlert() {
+            const title = document.getElementById('alertTitle').value;
+            const message = document.getElementById('alertMessage').value;
+            const type = document.getElementById('alertType').value;
+            const priority = document.getElementById('alertPriority').value;
+            
+            if (!title || !message) {
+                showMessage('Please fill in alert title and message', 'error');
+                return;
+            }
+
+            try {
+                const result = await callFunction('create_alert', {
+                    alert_title: title,
+                    alert_message: message,
+                    alert_type: type,
+                    priority: priority
+                });
+
+                if (result && result.success) {
+                    showMessage('✅ Alert created successfully', 'success');
+                    clearAlertForm();
+                    await loadAlertManagement();
+                    await loadAlerts(); // Refresh dashboard alerts
+                } else {
+                    showMessage(`Failed to create alert: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showMessage('Failed to create alert', 'error');
+            }
+        }
+
+        async function markAlertRead(alertId) {
+            try {
+                const result = await callFunction('mark_alert_read', {
+                    alert_id: alertId
+                });
+
+                if (result && result.success) {
+                    showMessage('✅ Alert marked as read', 'success');
+                    await loadAlertManagement();
+                    await loadAlerts(); // Refresh dashboard alerts
+                } else {
+                    showMessage(`Failed to mark alert as read: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showMessage('Failed to mark alert as read', 'error');
+            }
+        }
+
+        async function checkPaymentReminders() {
+            try {
+                const result = await callFunction('check_payment_reminders');
+
+                if (result && result.success) {
+                    showMessage(`✅ ${result.message}`, 'success');
+                    await loadAlertManagement();
+                    await loadAlerts(); // Refresh dashboard alerts
+                } else {
+                    showMessage(`Failed to check payment reminders: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showMessage('Failed to check payment reminders', 'error');
+            }
+        }
+
+        function clearAlertForm() {
+            document.getElementById('alertTitle').value = '';
+            document.getElementById('alertMessage').value = '';
+        }
+
+        // Update the showTab function to load appropriate data
+        function showTab(tabName, clickedElement) {
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            const targetTab = document.getElementById(tabName);
+            if (targetTab) {
+                targetTab.classList.add('active');
+            }
+
+            if (clickedElement) {
+                clickedElement.classList.add('active');
+            }
+
+            // Load data for specific tabs
+            if (tabName === 'transactions') {
+                loadTransactions();
+                loadCategoriesList();
+                loadBudgetSettings();
+            } else if (tabName === 'buckets') {
+                loadBuckets();
+            } else if (tabName === 'debts') {
+                loadDebts();
+            } else if (tabName === 'accounts') {
+                loadAccounts();
+            } else if (tabName === 'settings') {
+                loadFixedPayments();
+                loadAlertManagement();
+                updateCategorySelects();
+            }
+        }
+
+        // Initialize App
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('🚀 Initializing Personal Finance App...');
+            
+            showMessage('🔄 Testing database connection...', 'info');
+            const connected = await testConnection();
+            
+            if (connected) {
+                showMessage('✅ Connected to Supabase! Loading data...', 'success');
+                
+                await Promise.all([
+                    loadRealBalance(),
+                    loadRealSpending(),
+                    loadAlerts(),
+                    updateCategorySelects()
+                ]);
+            } else {
+                showMessage('⚠️ Using demo mode', 'info');
+                
+                const demoBalance = getDemoData('accounts');
+                if (demoBalance.length > 0) {
+                    document.getElementById('totalBalance').textContent = formatEuro(demoBalance[0].balance);
+                }
+                
+                const demoSpending = getDemoData('monthly_spending_formatted');
+                const spendingContainer = document.getElementById('spendingContainer');
+                spendingContainer.innerHTML = demoSpending.map(category => `
+                    <div class="list-item">
+                        <div><span style="margin-right: 8px;">${category.status_icon}</span><strong>${category.category}</strong></div>
+                        <div class="list-amount">${category.spent_formatted} / ${category.budget_formatted}<br><small>(${category.percent_used}%)</small></div>
+                    </div>
+                `).join('');
+                
+                document.getElementById('alertsContainer').innerHTML = `
+                    <div style="padding: 15px; background: rgba(245, 101, 101, 0.15); border-left: 4px solid #f56565; border-radius: 0 8px 8px 0;">
+                        <div style="font-weight: 600; margin-bottom: 5px; color: #f7fafc;">🚨 Budget Alert: Entertainment</div>
+                        <div style="font-size: 0.9rem; color: #cbd5e0;">You've spent €80.00/€80.00 (100%) of your Entertainment budget this month.</div>
+                    </div>
+                `;
+            }
+            
+            console.log('🎉 Personal Finance App ready!');
+        });
+    </script>
+</body>
+</html>
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%);
+            min-height: 100vh;
+            color: #e2e8f0;
+        }
+
+        .header {
+            background: rgba(45, 55, 72, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            color: #f7fafc;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            margin-bottom: 5px;
+            font-weight: 700;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1rem;
+            color: #cbd5e0;
+        }
+
+        .nav-tabs {
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(10px);
+            display: flex;
+            justify-content: center;
+            padding: 0;
+            margin: 0;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.2);
+            overflow-x: auto;
+        }
+
+        .nav-tab {
+            background: none;
+            border: none;
+            padding: 15px 25px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            color: #4a5568;
+            transition: all 0.3s ease;
+            border-bottom: 3px solid transparent;
+            white-space: nowrap;
+        }
+
+        .nav-tab:hover {
+            background: rgba(102, 126, 234, 0.1);
+            color: #667eea;
+        }
+
+        .nav-tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .tab-content {
+            display: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .tab-content.active {
+            display: block;
+            opacity: 1;
+        }
+
+        .connection-status {
+            text-align: center;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 10px;
+            font-weight: 600;
+            background: rgba(13, 110, 253, 0.2);
+            color: #90cdf4;
+            border: 2px solid #4299e1;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: rgba(45, 55, 72, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            color: #e2e8f0;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 48px rgba(0,0,0,0.4);
+            border-color: rgba(255,255,255,0.2);
+        }
+
+        .card-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            color: #f7fafc;
+        }
+
+        .balance-card {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            border: none;
+        }
+
+        .balance-amount {
+            font-size: 3rem;
+            font-weight: 700;
+            margin: 10px 0;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #f7fafc;
+            font-size: 0.95rem;
+        }
+
+        .input-group input, .input-group select, .input-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #4a5568;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+            background: rgba(26, 32, 44, 0.8);
+            color: #f7fafc;
+        }
+
+        .input-group input::placeholder, .input-group textarea::placeholder {
+            color: #a0aec0;
+        }
+
+        .input-group input:focus, .input-group select:focus, .input-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+            background: rgba(26, 32, 44, 0.95);
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            width: 100%;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .btn-small {
+            width: auto;
+            padding: 8px 16px;
+            font-size: 0.9rem;
+        }
+
+        .list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: rgba(74, 85, 104, 0.3);
+            border-radius: 10px;
+            margin-bottom: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #e2e8f0;
+        }
+
+        .list-amount {
+            font-weight: 600;
+            color: #90cdf4;
+            text-align: right;
+        }
+
+        .message {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-weight: 500;
+        }
+
+        .success {
+            background: rgba(72, 187, 120, 0.2);
+            color: #9ae6b4;
+            border-left: 4px solid #48bb78;
+        }
+
+        .error {
+            background: rgba(245, 101, 101, 0.2);
+            color: #fed7d7;
+            border-left: 4px solid #f56565;
+        }
+
+        .info {
+            background: rgba(66, 153, 225, 0.2);
+            color: #bee3f8;
+            border-left: 4px solid #4299e1;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #a0aec0;
+            font-style: italic;
+        }
+
+        .ai-response {
+            margin-top: 15px;
+            padding: 15px;
+            background: rgba(102, 126, 234, 0.15);
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+            color: #e2e8f0;
+        }
+
+        .settings-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(74, 85, 104, 0.2);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .settings-section h3 {
+            margin-bottom: 15px;
+            color: #90cdf4;
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        @media (max-width: 768px) {
+            .nav-tabs {
+                overflow-x: auto;
+            }
+            
+            .nav-tab {
+                flex-shrink: 0;
+                padding: 12px 20px;
+                font-size: 0.9rem;
+            }
+            
+            .balance-amount {
+                font-size: 2rem;
+            }
+            
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>💰 Personal Finance Dashboard</h1>
+        <p>AI-Powered Financial Management</p>
+    </div>
+
+    <div class="nav-tabs">
+        <button class="nav-tab active" onclick="showTab('dashboard', this)">📊 Dashboard</button>
+        <button class="nav-tab" onclick="showTab('transactions', this)">💳 Transactions</button>
+        <button class="nav-tab" onclick="showTab('buckets', this)">🪣 Buckets</button>
+        <button class="nav-tab" onclick="showTab('debts', this)">💳 Debts</button>
+        <button class="nav-tab" onclick="showTab('accounts', this)">🏦 Accounts</button>
+        <button class="nav-tab" onclick="showTab('reports', this)">📈 Reports</button>
+        <button class="nav-tab" onclick="showTab('settings', this)">⚙️ Settings</button>
+    </div>
+
+    <div class="container">
+        <div id="connectionStatus" class="connection-status">
+            🔄 Testing Database Connection...
+        </div>
+
+        <!-- Dashboard Tab -->
+        <div id="dashboard" class="tab-content active">
+            <div class="grid">
+                <div class="card balance-card">
+                    <div class="card-title">🏦 Account Balance</div>
+                    <div class="balance-amount" id="totalBalance">€0.00</div>
+                    <div style="display: flex; justify-content: space-between; margin-top: 15px; font-size: 0.9rem;">
+                        <div style="text-align: center;">
+                            <span style="font-weight: 600; display: block;" id="allocatedAmount">€0.00</span>
+                            <div>Allocated</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <span style="font-weight: 600; display: block;" id="availableAmount">€0.00</span>
+                            <div>Available</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">⚡ Quick Actions</div>
+                    <div class="input-group">
+                        <label>Amount (€)</label>
+                        <input type="number" id="quickAmount" placeholder="25.50" step="0.01">
+                    </div>
+                    <div class="input-group">
+                        <label>Description</label>
+                        <input type="text" id="quickDescription" placeholder="Coffee at Starbucks">
+                    </div>
+                    <div class="input-group">
+                        <label>Category</label>
+                        <select id="quickCategory">
+                            <option value="Food">🍕 Food</option>
+                            <option value="Transport">🚗 Transport</option>
+                            <option value="Bills">📄 Bills</option>
+                            <option value="Entertainment">🎬 Entertainment</option>
+                            <option value="Shopping">🛍️ Shopping</option>
+                            <option value="Healthcare">🏥 Healthcare</option>
+                            <option value="Other">📦 Other</option>
+                        </select>
+                    </div>
+                    <button class="btn" onclick="addExpense()">Add Expense</button>
+                    <button class="btn btn-secondary" onclick="addIncome()" style="margin-top: 10px;">Add Income</button>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">
+                        📊 Monthly Spending
+                        <button class="btn btn-small" onclick="refreshSpending()">↻</button>
+                    </div>
+                    <div id="spendingContainer">
+                        <div class="loading">Loading spending data...</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">🔔 Active Alerts</div>
+                    <div id="alertsContainer">
+                        <div class="loading">Loading alerts...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Transactions Tab -->
+        <div id="transactions" class="tab-content">
+            <div class="grid">
+                <div class="card">
+                    <div class="card-title">🤖 AI-Powered Expense Entry</div>
+                    <div class="input-group">
+                        <label>Natural Language Input</label>
+                        <textarea id="aiExpenseInput" placeholder="Try: 'I spent 23.50 on coffee at Starbucks this morning'" rows="3"></textarea>
+                    </div>
+                    <button class="btn" onclick="processAIExpense()">🤖 Parse with AI</button>
+                    <div id="aiExpenseResult" class="ai-response" style="display: none;">
+                        <h4>🤖 AI Parsed Result:</h4>
+                        <div id="aiExpenseResultText"></div>
+                        <button class="btn" onclick="confirmAIExpense()" style="margin-top: 10px; display: none;" id="confirmAIBtn">✅ Confirm & Add</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">💡 AI Financial Assistant</div>
+                    <div class="input-group">
+                        <label>Ask your AI assistant</label>
+                        <textarea id="aiQuestion" placeholder="How much can I spend on entertainment this month?" rows="2"></textarea>
+                    </div>
+                    <button class="btn" onclick="askAIAssistant()">🤖 Ask AI</button>
+                    <div id="aiResponse" class="ai-response" style="display: none;">
+                        <h4>🤖 AI Response:</h4>
+                        <div id="aiResponseText"></div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">
+                        📋 Recent Transactions
+                        <button class="btn btn-small" onclick="loadTransactions()">↻</button>
+                    </div>
+                    <div id="transactionsContainer">
+                        <div class="loading">Loading transactions...</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">⚙️ Manage Categories</div>
+                    <div id="categoriesListContainer">
+                        <div class="loading">Loading categories...</div>
+                    </div>
+                    
+                    <h4 style="margin-top: 20px; margin-bottom: 15px; color: #90cdf4;">Add New Category</h4>
+                    <div class="input-group">
+                        <label>Category Name</label>
+                        <input type="text" id="newCategoryName" placeholder="Groceries, Gym, Subscriptions, etc.">
+                    </div>
+                    <button class="btn" onclick="addNewCategory()">➕ Add Category</button>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">📊 Set Budget Limits</div>
+                    <div id="budgetSettingsContainer">
+                        <div class="loading">Loading budget settings...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Buckets Tab -->
+        <div id="buckets" class="tab-content">
+            <div class="grid">
+                <div class="card">
+                    <div class="card-title">🪣 Bucket Overview</div>
+                    <div id="bucketsContainer">
+                        <div class="loading">Loading buckets...</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">💰 Allocate to Bucket</div>
+                    <div class="input-group">
+                        <label>Bucket</label>
+                        <select id="bucketSelect">
+                            <option value="">Loading buckets...</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>Amount (€)</label>
+                        <input type="number" id="bucketAmount" placeholder="100.00" step="0.01">
+                    </div>
+                    <button class="btn" onclick="allocateToBucket()">Allocate Money</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Debts Tab -->
+        <div id="debts" class="tab-content">
+            <div class="grid">
+                <div class="card">
+                    <div class="card-title">💳 Debt Management</div>
+                    <div id="debtsContainer">
+                        <div class="loading">Loading debts...</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">➕ Add New Debt</div>
+                    <div class="input-group">
+                        <label>Debt Name</label>
+                        <input type="text" id="debtName" placeholder="Car Loan, etc.">
+                    </div>
+                    <div class="input-group">
+                        <label>Current Balance (€)</label>
+                        <input type="number" id="debtBalance" placeholder="2500.00" step="0.01">
+                    </div>
+                    <div class="input-group">
+                        <label>Minimum Payment (€)</label>
+                        <input type="number" id="debtMinPayment" placeholder="150.00" step="0.01">
+                    </div>
+                    <div class="input-group">
+                        <label>Due Day</label>
+                        <input type="number" id="debtDueDay" placeholder="25" min="1" max="31">
+                    </div>
+                    <button class="btn" onclick="addNewDebt()">➕ Add Debt</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Accounts Tab -->
+        <div id="accounts" class="tab-content">
+            <div class="grid">
+                <div class="card">
+                    <div class="card-title">🏦 All Accounts</div>
+                    <div id="accountsContainer">
+                        <div class="loading">Loading accounts...</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">➕ Add New Account</div>
+                    <div class="input-group">
+                        <label>Account Name</label>
+                        <input type="text" id="accountName" placeholder="Investment Account">
+                    </div>
+                    <div class="input-group">
+                        <label>Account Type</label>
+                        <select id="accountType">
+                            <option value="checking">Checking</option>
+                            <option value="savings">Savings</option>
+                            <option value="investment">Investment</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>Initial Balance (€)</label>
+                        <input type="number" id="accountBalance" placeholder="1000.00" step="0.01">
+                    </div>
+                    <button class="btn" onclick="addNewAccount()">➕ Add Account</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reports Tab -->
+        <div id="reports" class="tab-content">
+            <div class="grid">
+                <div class="card">
+                    <div class="card-title">
+                        📊 AI Budget Insights
+                        <button class="btn btn-small" onclick="getAIInsights()">🤖 Analyze</button>
+                    </div>
+                    <div id="aiInsights">
+                        <div class="loading">Click "Analyze" to get AI-powered budget insights</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">📈 Monthly Report</div>
+                    <div class="input-group">
+                        <label>Select Month</label>
+                        <select id="reportMonth">
+                            <option value="current">Current Month</option>
+                            <option value="previous">Previous Month</option>
+                        </select>
+                    </div>
+                    <button class="btn" onclick="generateReport()">Generate Report</button>
+                    <div id="reportContainer" style="margin-top: 15px;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Tab -->
+        <div id="settings" class="tab-content">
+            <div class="settings-section">
+                <h3>🤖 AI Configuration</h3>
+                <div class="input-group">
+                    <label>OpenAI API Key</label>
+                    <input type="password" id="openaiApiKey" placeholder="sk-proj-...">
+                </div>
+                <button class="btn" onclick="saveOpenAIKey()">💾 Save API Key</button>
+                <button class="btn btn-secondary" onclick="testAI()" style="margin-top: 10px;">🧪 Test AI Connection</button>
+                <div id="aiTestResult" class="ai-response" style="display: none; margin-top: 15px;">
+                    <h4>🧪 AI Test Result:</h4>
+                    <div id="aiTestResultText"></div>
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <h3>📊 Budget Settings</h3>
+                <div class="input-group">
+                    <label>Food Budget (€)</label>
+                    <input type="number" id="foodBudget" value="250" step="0.01">
+                </div>
+                <div class="input-group">
+                    <label>Entertainment Budget (€)</label>
+                    <input type="number" id="entertainmentBudget" value="80" step="0.01">
+                </div>
+                <div class="input-group">
+                    <label>Transport Budget (€)</label>
+                    <input type="number" id="transportBudget" value="120" step="0.01">
+                </div>
+                <button class="btn" onclick="saveBudgetSettings()">💾 Save Budget Settings</button>
+            </div>
+
+            <div class="settings-section">
+                <h3>💳 Fixed Payments</h3>
+                <div id="fixedPaymentsContainer">
+                    <div class="loading">Loading fixed payments...</div>
+                </div>
+                
+                <h4 style="margin-top: 20px; margin-bottom: 15px; color: #90cdf4;">Add New Fixed Payment</h4>
+                <div class="input-group">
+                    <label>Payment Name</label>
+                    <input type="text" id="fixedPaymentName" placeholder="Netflix Subscription">
+                </div>
+                <div class="input-group">
+                    <label>Amount (€)</label>
+                    <input type="number" id="fixedPaymentAmount" placeholder="15.99" step="0.01">
+                </div>
+                <div class="input-group">
+                    <label>Category</label>
+                    <select id="fixedPaymentCategory">
+                        <option value="Bills">📄 Bills</option>
+                        <option value="Entertainment">🎬 Entertainment</option>
+                        <option value="Food">🍕 Food</option>
+                        <option value="Transport">🚗 Transport</option>
+                        <option value="Healthcare">🏥 Healthcare</option>
+                        <option value="Other">📦 Other</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>Due Day (1-31)</label>
+                    <input type="number" id="fixedPaymentDueDay" placeholder="15" min="1" max="31">
+                </div>
+                <button class="btn" onclick="addFixedPayment()">➕ Add Fixed Payment</button>
+            </div>
+
+            <div class="settings-section">
+                <h3>🔔 Alert Management</h3>
+                <div id="alertManagementContainer">
+                    <div class="loading">Loading alerts...</div>
+                </div>
+                
+                <h4 style="margin-top: 20px; margin-bottom: 15px; color: #90cdf4;">Create Custom Alert</h4>
+                <div class="input-group">
+                    <label>Alert Title</label>
+                    <input type="text" id="alertTitle" placeholder="Budget Review Reminder">
+                </div>
+                <div class="input-group">
+                    <label>Alert Message</label>
+                    <textarea id="alertMessage" placeholder="Time to review your monthly budget and spending" rows="2"></textarea>
+                </div>
+                <div class="input-group">
+                    <label>Alert Type</label>
+                    <select id="alertType">
+                        <option value="budget_warning">Budget Warning</option>
+                        <option value="payment_due">Payment Due</option>
+                        <option value="debt_reminder">Debt Reminder</option>
+                        <option value="goal_achieved">Goal Achieved</option>
+                        <option value="task_reminder">Task Reminder</option>
+                        <option value="custom">Custom</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>Priority</label>
+                    <select id="alertPriority">
+                        <option value="low">Low</option>
+                        <option value="medium" selected>Medium</option>
+                        <option value="high">High</option>
+                        <option value="urgent">Urgent</option>
+                    </select>
+                </div>
+                <button class="btn" onclick="createCustomAlert()">➕ Create Alert</button>
+                <button class="btn btn-secondary" onclick="checkPaymentReminders()" style="margin-top: 10px;">🔄 Check Payment Reminders</button>
+            </div>
+        </div>
+
+        <div id="messageContainer"></div>
+    </div>
+
+    <script>
+        // Configuration
+        const SUPABASE_URL = 'https://fbbsfxcftgoetfvnjevt.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZiYnNmeGNmdGdvZXRmdm5qZXZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc4NTM3MzksImV4cCI6MjA3MzQyOTczOX0.SgVG5AAJTcMC8wRJBvIjAibGc6oO126Wj6nK-XALvxY';
+        
+        let useDemo = false;
+        let isConnected = false;
+        let currentParsedExpense = null;
+
+        const getHeaders = () => ({
+            'apikey': SUPABASE_KEY,
+            'Authorization': `Bearer ${SUPABASE_KEY}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        });
+
+        async function testConnection() {
+            try {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/accounts?select=name,balance&limit=1`, {
+                    method: 'GET',
+                    headers: getHeaders()
+                });
+                
+                if (response.ok) {
+                    isConnected = true;
+                    useDemo = false;
+                    updateConnectionStatus(true);
+                    return true;
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+            } catch (error) {
+                isConnected = false;
+                useDemo = true;
+                updateConnectionStatus(false, error.message);
+                return false;
+            }
+        }
+
+        function updateConnectionStatus(connected, errorMessage = '') {
+            const statusEl = document.getElementById('connectionStatus');
+            
+            if (connected) {
+                statusEl.style.background = 'rgba(72, 187, 120, 0.2)';
+                statusEl.style.color = '#9ae6b4';
+                statusEl.style.border = '2px solid #48bb78';
+                statusEl.innerHTML = '✅ Connected to Supabase - Real Data Active';
+            } else {
+                statusEl.style.background = 'rgba(245, 101, 101, 0.2)';
+                statusEl.style.color = '#fed7d7';
+                statusEl.style.border = '2px solid #f56565';
+                statusEl.innerHTML = `🔒 Demo Mode - ${errorMessage || 'Connection failed'}`;
+            }
+        }
+
+        async function queryTable(tableName, params = '') {
+            if (useDemo) return getDemoData(tableName);
+
+            try {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/${tableName}${params}`, {
+                    method: 'GET',
+                    headers: getHeaders()
+                });
+                
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                return await response.json();
+            } catch (error) {
+                return getDemoData(tableName);
+            }
+        }
+
+        async function callFunction(functionName, params = {}) {
+            if (useDemo) {
+                return { success: true, message: 'Demo mode operation' };
+            }
+
+            try {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${functionName}`, {
+                    method: 'POST',
+                    headers: getHeaders(),
+                    body: JSON.stringify(params)
+                });
+                
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                return await response.json();
+            } catch (error) {
+                showMessage(`Database operation failed: ${error.message}`, 'error');
+                return { success: false, error: error.message };
+            }
+        }
+
+        function getDemoData(tableName) {
+            const demoData = {
+                'accounts': [{ name: 'Main Account', balance: '1924.50', type: 'checking' }],
+                'monthly_spending_formatted': [
+                    { category: 'Entertainment', spent_formatted: '€80.00', budget_formatted: '€80.00', percent_used: '100.0', status_icon: '🚨' },
+                    { category: 'Food', spent_formatted: '€125.50', budget_formatted: '€250.00', percent_used: '50.2', status_icon: '✅' },
+                    { category: 'Transport', spent_formatted: '€45.00', budget_formatted: '€120.00', percent_used: '37.5', status_icon: '✅' }
+                ],
+                'buckets': [
+                    { name: 'Emergency Fund', allocated_amount: '500.00', target_amount: '2500.00' },
+                    { name: 'Flexible Buffer', allocated_amount: '150.00', target_amount: '400.00' }
+                ],
+                'debts': [{ name: 'Credit Card', remaining: '1850.00', minimum_payment: '150.00', due_day: 25 }]
+            };
+            return demoData[tableName] || [];
+        }
+
+        async function loadRealBalance() {
+            try {
+                const data = await queryTable('accounts', '?select=balance');
+                
+                if (data && data.length > 0) {
+                    const totalBalance = data.reduce((sum, account) => sum + parseFloat(account.balance || 0), 0);
+                    document.getElementById('totalBalance').textContent = formatEuro(totalBalance);
+                    
+                    const bucketsData = await queryTable('buckets', '?select=allocated_amount');
+                    let totalAllocated = 0;
+                    if (bucketsData && bucketsData.length > 0) {
+                        totalAllocated = bucketsData.reduce((sum, bucket) => sum + parseFloat(bucket.allocated_amount || 0), 0);
+                    }
+                    
+                    document.getElementById('allocatedAmount').textContent = formatEuro(totalAllocated);
+                    document.getElementById('availableAmount').textContent = formatEuro(totalBalance - totalAllocated);
+                    
+                    showMessage('✅ Balance data loaded successfully', 'success');
+                } else {
+                    document.getElementById('totalBalance').textContent = '€0.00';
+                }
+            } catch (error) {
+                showMessage('❌ Failed to load balance data', 'error');
+            }
+        }
+
+        async function loadRealSpending() {
+            try {
+                const data = await queryTable('monthly_spending_formatted');
+                const container = document.getElementById('spendingContainer');
+                
+                if (data && data.length > 0) {
+                    container.innerHTML = data.map(category => `
+                        <div class="list-item">
+                            <div><span style="margin-right: 8px;">${category.status_icon}</span><strong>${category.category}</strong></div>
+                            <div class="list-amount">${category.spent_formatted} / ${category.budget_formatted}<br><small>(${category.percent_used}%)</small></div>
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = '<div class="loading">No spending data found</div>';
+                }
+            } catch (error) {
+                showMessage('❌ Failed to load spending data', 'error');
+            }
+        }
+
+        async function loadBuckets() {
+            try {
+                const data = await queryTable('buckets', '?select=name,allocated_amount,target_amount&is_active=eq.true');
+                const container = document.getElementById('bucketsContainer');
+                const select = document.getElementById('bucketSelect');
+                
+                if (data && data.length > 0) {
+                    container.innerHTML = data.map(bucket => {
+                        const percentage = bucket.target_amount > 0 ? (parseFloat(bucket.allocated_amount) / parseFloat(bucket.target_amount)) * 100 : 0;
+                        const statusIcon = percentage >= 100 ? '✅' : percentage >= 80 ? '⚠️' : '🔴';
+                        
+                        return `
+                            <div class="list-item">
+                                <div>
+                                    <h4>${statusIcon} ${bucket.name}</h4>
+                                    <div style="width: 100%; height: 8px; background: rgba(74, 85, 104, 0.5); border-radius: 4px; margin-top: 8px;">
+                                        <div style="height: 100%; background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%); width: ${Math.min(percentage, 100)}%; border-radius: 4px;"></div>
+                                    </div>
+                                </div>
+                                <div class="list-amount">${formatEuro(bucket.allocated_amount)} / ${formatEuro(bucket.target_amount)}<br><small>(${percentage.toFixed(1)}%)</small></div>
+                            </div>
+                        `;
+                    }).join('');
+                    
+                    select.innerHTML = data.map(bucket => `<option value="${bucket.name}">${bucket.name}</option>`).join('');
+                } else {
+                    container.innerHTML = '<div class="loading">No buckets found</div>';
+                    select.innerHTML = '<option value="">No buckets available</option>';
+                }
+            } catch (error) {
+                showMessage('❌ Failed to load buckets data', 'error');
+            }
+        }
+
+        async function loadDebts() {
+            try {
+                const data = await queryTable('debts', '?select=name,remaining,minimum_payment,due_day&is_active=eq.true');
+                const container = document.getElementById('debtsContainer');
+                
+                if (data && data.length > 0) {
+                    container.innerHTML = data.map(debt => {
+                        const monthsToPayOff = debt.minimum_payment > 0 ? (parseFloat(debt.remaining) / parseFloat(debt.minimum_payment)).toFixed(1) : '∞';
+                        
+                        return `
+                            <div class="list-item" style="background: rgba(245, 101, 101, 0.15); border-left: 4px solid #f56565;">
+                                <div>
+                                    <strong>💳 ${debt.name}</strong>
+                                    <br><small>Due: ${debt.due_day}th • Min: ${formatEuro(debt.minimum_payment)}</small>
+                                </div>
+                                <div style="text-align: right; font-weight: 600; color: #fed7d7;">
+                                    ${formatEuro(debt.remaining)}
+                                    <br><small>(~${monthsToPayOff} months)</small>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                } else {
+                    container.innerHTML = '<div class="loading">No debts found</div>';
+                }
+            } catch (error) {
+                showMessage('❌ Failed to load debts data', 'error');
+            }
+        }
+
+        async function loadAccounts() {
+            try {
+                const data = await queryTable('accounts', '?select=name,type,balance');
+                const container = document.getElementById('accountsContainer');
+                
+                if (data && data.length > 0) {
+                    container.innerHTML = data.map(account => `
+                        <div class="list-item">
+                            <div><h4>🏦 ${account.name}</h4><small>${account.type}</small></div>
+                            <div class="list-amount">${formatEuro(account.balance)}</div>
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = '<div class="loading">No accounts found</div>';
+                }
+            } catch (error) {
+                showMessage('❌ Failed to load accounts data', 'error');
+            }
+        }
+
+        async function loadAlerts() {
+            try {
+                const data = await queryTable('alerts', '?select=title,message,alert_type,priority&status=eq.pending&limit=5');
+                const container = document.getElementById('alertsContainer');
+                
+                if (data && data.length > 0) {
+                    container.innerHTML = data.map(alert => {
+                        const iconMap = {
+                            'budget_warning': '🚨',
+                            'payment_due': '💳',
+                            'debt_reminder': '💰',
+                            'goal_achieved': '🎉',
+                            'task_reminder': '📋'
+                        };
+                        
+                        return `
+                            <div style="padding: 15px; background: rgba(245, 101, 101, 0.15); border-left: 4px solid #f56565; border-radius: 0 8px 8px 0; margin-bottom: 10px;">
+                                <div style="font-weight: 600; margin-bottom: 5px; color: #f7fafc;">${iconMap[alert.alert_type] || '🔔'} ${alert.title}</div>
+                                <div style="font-size: 0.9rem; color: #cbd5e0;">${alert.message}</div>
+                            </div>
+                        `;
+                    }).join('');
+                } else {
+                    container.innerHTML = '<div class="loading">No active alerts</div>';
+                }
+            } catch (error) {
+                showMessage('❌ Failed to load alerts data', 'error');
+            }
+        }
+
+        function formatEuro(amount) {
+            const num = typeof amount === 'string' ? parseFloat(amount) : amount;
+            return new Intl.NumberFormat('de-DE', {
+                style: 'currency',
+                currency: 'EUR'
+            }).format(num || 0);
+        }
+
+        function showTab(tabName, clickedElement) {
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            const targetTab = document.getElementById(tabName);
+            if (targetTab) {
+                targetTab.classList.add('active');
+            }
+
+            if (clickedElement) {
+                clickedElement.classList.add('active');
+            }
+
+            if (tabName === 'buckets') {
+                loadBuckets();
+            } else if (tabName === 'debts') {
+                loadDebts();
+            } else if (tabName === 'accounts') {
+                loadAccounts();
+            }
+        }
+
+        async function addExpense() {
+            const amount = document.getElementById('quickAmount').value;
+            const description = document.getElementById('quickDescription').value;
+            const category = document.getElementById('quickCategory').value;
+            
+            if (!amount || !description) {
+                showMessage('Please fill in amount and description', 'error');
+                return;
+            }
+
+            try {
+                const result = await callFunction('add_expense', {
+                    account_name: 'Main Account',
+                    category_name: category,
+                    amount: parseFloat(amount),
+                    description: description
+                });
+
+                if (result.success !== false) {
+                    showMessage(`✅ Added €${amount} expense for ${description}`, 'success');
+                    clearQuickForm();
+                    await loadRealBalance();
+                    await loadRealSpending();
+                } else {
+                    showMessage(`Error: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showMessage('Failed to add expense', 'error');
+            }
+        }
+
+        async function addIncome() {
+            const amount = document.getElementById('quickAmount').value;
+            const description = document.getElementById('quickDescription').value;
+            
+            if (!amount || !description) {
+                showMessage('Please fill in amount and description', 'error');
+                return;
+            }
+
+            try {
+                const result = await callFunction('add_income', {
+                    account_name: 'Main Account',
+                    amount: parseFloat(amount),
+                    description: description
+                });
+
+                if (result.success !== false) {
+                    showMessage(`✅ Added €${amount} income for ${description}`, 'success');
+                    clearQuickForm();
+                    await loadRealBalance();
+                } else {
+                    showMessage(`Error: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showMessage('Failed to add income', 'error');
+            }
+        }
+
+        async function allocateToBucket() {
+            const bucketName = document.getElementById('bucketSelect').value;
+            const amount = document.getElementById('bucketAmount').value;
+            
+            if (!bucketName || !amount) {
+                showMessage('Please select bucket and enter amount', 'error');
+                return;
+            }
+
+            try {
+                const result = await callFunction('allocate_to_bucket', {
+                    bucket_name: bucketName,
+                    amount: parseFloat(amount)
+                });
+
+                if (result.success !== false) {
+                    showMessage(`✅ Allocated €${amount} to ${bucketName}`, 'success');
+                    document.getElementById('bucketAmount').value = '';
+                    await loadBuckets();
+                    await loadRealBalance();
+                } else {
+                    showMessage(`Error: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showMessage('Failed to allocate to bucket', 'error');
+            }
+        }
+
+        async function processAIExpense() {
+            const expenseText = document.getElementById('aiExpenseInput').value;
+            
+            if (!expenseText.trim()) {
+                showMessage('Please enter expense description', 'error');
+                return;
+            }
+
+            try {
+                const result = await callFunction('parse_expense_with_ai', {
+                    expense_text: expenseText
+                });
+
+                if (result && result.success) {
+                    const parsed = result.parsed;
+                    currentParsedExpense = parsed;
+                    
+                    document.getElementById('aiExpenseResultText').innerHTML = `
+                        <strong>Amount:</strong> €${parsed.amount}<br>
+                        <strong>Category:</strong> ${parsed.category}<br>
+                        <strong>Description:</strong> ${parsed.description}<br>
+                        <strong>Confidence:</strong> ${(parsed.confidence * 100).toFixed(1)}%
+                    `;
+                    
+                    document.getElementById('aiExpenseResult').style.display = 'block';
+                    document.getElementById('confirmAIBtn').style.display = 'block';
+                    
+                    showMessage('✅ AI parsing completed', 'success');
+                } else {
+                    showMessage(`AI parsing failed: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showMessage('Failed to parse expense with AI', 'error');
+            }
+        }
+
+        async function confirmAIExpense() {
+            if (!currentParsedExpense) {
+                showMessage('No parsed expense to confirm', 'error');
+                return;
+            }
+
+            try {
+                const result = await callFunction('add_expense', {
+                    account_name: 'Main Account',
+                    category_name: currentParsedExpense.category,
+                    amount: parseFloat(currentParsedExpense.amount),
+                    description: currentParsedExpense.description
+                });
+
+                if (result.success !== false) {
+                    showMessage(`✅ Added AI-parsed expense: €${currentParsedExpense.amount}`, 'success');
+                    document.getElementById('aiExpenseInput').value = '';
+                    document.getElementById('aiExpenseResult').style.display = 'none';
+                    currentParsedExpense = null;
+                    await loadRealBalance();
+                    await loadRealSpending();
+                } else {
+                    showMessage(`Error: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showMessage('Failed to add AI-parsed expense', 'error');
+            }
+        }
+
+        async function askAIAssistant() {
+            const question = document.getElementById('aiQuestion').value;
+            
+            if (!question.trim()) {
+                showMessage('Please enter a question', 'error');
+                return;
+            }
+
+            try {
+                showMessage('🤖 AI is analyzing your financial data...', 'info');
+                
+                // Show loading state
+                document.getElementById('aiResponseText').innerHTML = `
+                    <div style="text-align: center; padding: 20px; color: #a0aec0;">
+                        <div style="margin-bottom: 10px;">🤖 Analyzing your financial data...</div>
+                        <div style="font-size: 0.9rem;">Gathering account balances, spending patterns, debts, and savings...</div>
+                    </div>
+                `;
+                document.getElementById('aiResponse').style.display = 'block';
+                
+                const result = await callFunction('get_real_ai_financial_advice', {
+                    user_question: question
+                });
+
+                if (result && result.success) {
+                    document.getElementById('aiResponseText').innerHTML = `
+                        <div style="margin-bottom: 15px;">
+                            <strong>🎯 AI Analysis:</strong><br>
+                            ${result.advice}
+                        </div>
+                        
+                        ${result.financial_data ? `
+                            <div style="margin-top: 15px; padding: 15px; background: rgba(74, 85, 104, 0.3); border-radius: 8px;">
+                                <strong>📊 Your Financial Snapshot:</strong><br>
+                                • Total Balance: €${result.financial_data.total_balance}<br>
+                                • Available Balance: €${result.financial_data.available_balance}<br>
+                                • Monthly Income: €${result.financial_data.monthly_income}<br>
+                                • Monthly Expenses: €${result.financial_data.monthly_expenses}<br>
+                                • Net Monthly: €${result.financial_data.net_monthly}<br>
+                                • Total Debt: €${result.financial_data.debt_total}
+                            </div>
+                        ` : ''}
+                        
+                        <div style="margin-top: 10px; font-size: 0.85rem; color: #a0aec0;">
+                            💡 This analysis is based on your actual financial data including account balances, spending patterns, debt levels, and savings goals.
+                        </div>
+                    `;
+                    
+                    showMessage('✅ AI provided personalized analysis based on your real financial data', 'success');
+                } else {
+                    document.getElementById('aiResponseText').innerHTML = `
+                        <div style="color: #fed7d7;">
+                            <strong>❌ AI Analysis Failed:</strong><br>
+                            ${result.error || 'Unknown error occurred'}
+                        </div>
+                    `;
+                    showMessage(`AI advice failed: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                document.getElementById('aiResponseText').innerHTML = `
+                    <div style="color: #fed7d7;">
+                        <strong>❌ Connection Error:</strong><br>
+                        Failed to connect to AI service. Please check your internet connection and API key configuration.
+                    </div>
+                `;
+                showMessage('Failed to get AI advice - connection error', 'error');
+            }
+        }
+
+        async function processAIExpense() {
+            const expenseText = document.getElementById('aiExpenseInput').value;
+            
+            if (!expenseText.trim()) {
+                showMessage('Please enter expense description', 'error');
+                return;
+            }
+
+            try {
+                showMessage('🤖 AI is parsing your expense...', 'info');
+                
+                const result = await callFunction('parse_expense_with_real_ai', {
+                    expense_text: expenseText
+                });
+
+                if (result && result.success) {
+                    const parsed = result.parsed;
+                    currentParsedExpense = parsed;
+                    
+                    document.getElementById('aiExpenseResultText').innerHTML = `
+                        <div style="margin-bottom: 15px;">
+                            <strong>Amount:</strong> €${parsed.amount}<br>
+                            <strong>Category:</strong> ${parsed.category}<br>
+                            <strong>Description:</strong> ${parsed.description}<br>
+                            <strong>AI Confidence:</strong> ${(parsed.confidence * 100).toFixed(1)}%
+                        </div>
+                        
+                        ${result.openai_prompt_ready ? `
+                            <div style="margin-top: 10px; padding: 10px; background: rgba(66, 153, 225, 0.2); border-radius: 6px; font-size: 0.85rem;">
+                                💡 This uses enhanced pattern matching. For even better accuracy, enable HTTP extensions in PostgreSQL to use real OpenAI API calls.
+                            </div>
+                        ` : ''}
+                    `;
+                    
+                    document.getElementById('aiExpenseResult').style.display = 'block';
+                    document.getElementById('confirmAIBtn').style.display = 'block';
+                    
+                    showMessage('✅ AI expense parsing completed', 'success');
+                } else {
+                    showMessage(`AI parsing failed: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showMessage('Failed to parse expense with AI', 'error');
+            }
+        }
+
+        async function getAIInsights() {
+            try {
+                showMessage('🤖 AI is performing comprehensive financial analysis...', 'info');
+                
+                // Show loading state
+                document.getElementById('aiInsights').innerHTML = `
+                    <div class="ai-response">
+                        <h4>🤖 AI Financial Analysis:</h4>
+                        <div style="text-align: center; padding: 20px; color: #a0aec0;">
+                            <div style="margin-bottom: 10px;">📊 Analyzing your complete financial picture...</div>
+                            <div style="font-size: 0.9rem;">This may take a moment while AI reviews all your data...</div>
+                        </div>
+                    </div>
+                `;
+                
+                const result = await callFunction('get_real_ai_financial_advice', {
+                    user_question: 'Provide comprehensive budget insights and financial recommendations based on my complete financial situation'
+                });
+
+                if (result && result.success) {
+                    document.getElementById('aiInsights').innerHTML = `
+                        <div class="ai-response">
+                            <h4>🤖 Comprehensive AI Financial Analysis:</h4>
+                            <div style="margin-bottom: 15px;">
+                                ${result.advice}
+                            </div>
+                            
+                            ${result.financial_data ? `
+                                <div style="margin-top: 15px; padding: 15px; background: rgba(74, 85, 104, 0.3); border-radius: 8px;">
+                                    <strong>📈 Key Financial Metrics:</strong><br>
+                                    • Total Balance: €${result.financial_data.total_balance}<br>
+                                    • Available for Allocation: €${result.financial_data.available_balance}<br>
+                                    • Monthly Cash Flow: €${result.financial_data.net_monthly}<br>
+                                    • Debt Load: €${result.financial_data.debt_total}<br>
+                                    • Savings Rate: ${result.financial_data.monthly_income > 0 ? 
+                                        ((result.financial_data.net_monthly / result.financial_data.monthly_income) * 100).toFixed(1) + '%' : 'N/A'}
+                                </div>
+                            ` : ''}
+                            
+                            <div style="margin-top: 15px; font-size: 0.85rem; color: #a0aec0;">
+                                🎯 This analysis considers your spending patterns, budget adherence, debt levels, savings progress, and financial goals.
+                            </div>
+                        </div>
+                    `;
+                    showMessage('✅ AI completed comprehensive financial analysis', 'success');
+                } else {
+                    document.getElementById('aiInsights').innerHTML = `
+                        <div class="ai-response">
+                            <h4>❌ AI Analysis Failed:</h4>
+                            <p style="color: #fed7d7;">${result.error || 'Unable to complete financial analysis'}</p>
+                        </div>
+                    `;
+                    showMessage(`AI insights failed: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                document.getElementById('aiInsights').innerHTML = `
+                    <div class="ai-response">
+                        <h4>❌ Connection Error:</h4>
+                        <p style="color: #fed7d7;">Failed to connect to AI service. Please check your configuration.</p>
+                    </div>
+                `;
+                showMessage('Failed to get AI insights', 'error');
+            }
+        }
+
+        async function generateReport() {
+            try {
+                const reportMonth = document.getElementById('reportMonth').value;
+                const result = await callFunction('generate_monthly_report', {
+                    report_month: reportMonth
+                });
+
+                if (result && result.success) {
+                    const reportHtml = `
+                        <div class="ai-response">
+                            <h4>📈 Monthly Financial Report</h4>
+                            <p><strong>Period:</strong> ${result.period}</p>
+                            
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin: 15px 0;">
+                                <div style="text-align: center; padding: 10px; background: rgba(72, 187, 120, 0.2); border-radius: 8px;">
+                                    <div style="font-size: 1.2rem; font-weight: bold;">€${result.summary.total_income}</div>
+                                    <div>Income</div>
+                                </div>
+                                <div style="text-align: center; padding: 10px; background: rgba(245, 101, 101, 0.2); border-radius: 8px;">
+                                    <div style="font-size: 1.2rem; font-weight: bold;">€${result.summary.total_expenses}</div>
+                                    <div>Expenses</div>
+                                </div>
+                                <div style="text-align: center; padding: 10px; background: rgba(66, 153, 225, 0.2); border-radius: 8px;">
+                                    <div style="font-size: 1.2rem; font-weight: bold;">€${result.summary.net_change}</div>
+                                    <div>Net Change</div>
+                                </div>
+                                <div style="text-align: center; padding: 10px; background: rgba(237, 137, 54, 0.2); border-radius: 8px;">
+                                    <div style="font-size: 1.2rem; font-weight: bold;">${result.summary.savings_rate}%</div>
+                                    <div>Savings Rate</div>
+                                </div>
+                            </div>
+
+                            ${result.recommendations && result.recommendations.length > 0 ? `
+                                <h5>Recommendations:</h5>
+                                <ul style="margin: 10px 0; padding-left: 20px;">
+                                    ${result.recommendations.map(rec => `<li>${rec}</li>`).join('')}
+                                </ul>
+                            ` : ''}
+                        </div>
+                    `;
+                    
+                    document.getElementById('reportContainer').innerHTML = reportHtml;
+                    showMessage('✅ Monthly report generated successfully', 'success');
+                } else {
+                    showMessage(`Report generation failed: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showMessage('Failed to generate report', 'error');
+            }
+        }
+
+        async function saveBudgetSettings() {
+            const food = document.getElementById('foodBudget').value;
+            const entertainment = document.getElementById('entertainmentBudget').value;
+            const transport = document.getElementById('transportBudget').value;
+            
+            if (!food || !entertainment || !transport) {
+                showMessage('Please fill in all budget fields', 'error');
+                return;
+            }
+
+            try {
+                const result = await callFunction('update_budget_limits', {
+                    food_budget: parseFloat(food),
+                    entertainment_budget: parseFloat(entertainment),
+                    transport_budget: parseFloat(transport)
+                });
+
+                if (result && result.success) {
+                    showMessage('✅ Budget settings saved successfully', 'success');
+                    await loadRealSpending();
+                } else {
+                    showMessage(`Failed to save budget settings: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showMessage('Failed to save budget settings', 'error');
+            }
+        }
+
+        async function saveOpenAIKey() {
+            const apiKey = document.getElementById('openaiApiKey').value;
+            
+            if (!apiKey.trim()) {
+                showMessage('Please enter an API key', 'error');
+                return;
+            }
+
+            try {
+                const result = await callFunction('update_api_key', {
+                    service: 'openai',
+                    new_key: apiKey
+                });
+
+                if (result && result.success) {
+                    showMessage('✅ OpenAI API key saved successfully', 'success');
+                    document.getElementById('openaiApiKey').value = '';
+                } else {
+                    showMessage(`Failed to save API key: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showMessage('Failed to save API key', 'error');
+            }
+        }
+
+        async function testAI() {
+            try {
+                const result = await callFunction('test_openai_connection');
+
+                if (result && result.success) {
+                    document.getElementById('aiTestResultText').innerHTML = `
+                        <strong>Status:</strong> ${result.message}<br>
+                        <strong>Key Preview:</strong> ${result.key_preview || 'Hidden'}
+                    `;
+                    document.getElementById('aiTestResult').style.display = 'block';
+                    showMessage('✅ AI connection test completed', 'success');
+                } else {
+                    document.getElementById('aiTestResultText').textContent = `Test failed: ${result.error}`;
+                    document.getElementById('aiTestResult').style.display = 'block';
+                    showMessage(`AI test failed: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showMessage('Failed to test AI connection', 'error');
+            }
+        }
+
+        async function addNewDebt() {
+            const name = document.getElementById('debtName').value;
+            const balance = document.getElementById('debtBalance').value;
+            const minPayment = document.getElementById('debtMinPayment').value;
+            const dueDay = document.getElementById('debtDueDay').value;
+            
+            if (!name || !balance || !minPayment || !dueDay) {
+                showMessage('Please fill in all debt fields', 'error');
+                return;
+            }
+
+            try {
+                const result = await callFunction('add_debt', {
+                    debt_name: name,
+                    total_amount: parseFloat(balance),
+                    minimum_payment: parseFloat(minPayment),
+                    due_day: parseInt(dueDay),
+                    interest_rate: 0
+                });
+
+                if (result && result.success) {
+                    showMessage(`✅ Debt "${name}" added successfully`, 'success');
+                    clearDebtForm();
+                    await loadDebts();
+                } else {
+                    showMessage(`Failed to add debt: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showMessage('Failed to add debt', 'error');
+            }
+        }
+
+        async function addNewAccount() {
+            const name = document.getElementById('accountName').value;
+            const type = document.getElementById('accountType').value;
+            const balance = document.getElementById('accountBalance').value;
+            
+            if (!name || !balance) {
+                showMessage('Please fill in account name and balance', 'error');
+                return;
+            }
+
+            try {
+                const result = await callFunction('add_account', {
+                    account_name: name,
+                    account_type: type,
+                    initial_balance: parseFloat(balance)
+                });
+
+                if (result && result.success) {
+                    showMessage(`✅ Account "${name}" added successfully`, 'success');
+                    clearAccountForm();
+                    await loadAccounts();
+                    await loadRealBalance();
+                } else {
+                    showMessage(`Failed to add account: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showMessage('Failed to add account', 'error');
+            }
+        }
+
+        function clearQuickForm() {
+            document.getElementById('quickAmount').value = '';
+            document.getElementById('quickDescription').value = '';
+        }
+
+        function clearDebtForm() {
+            document.getElementById('debtName').value = '';
+            document.getElementById('debtBalance').value = '';
+            document.getElementById('debtMinPayment').value = '';
+            document.getElementById('debtDueDay').value = '';
+        }
+
+        function clearAccountForm() {
+            document.getElementById('accountName').value = '';
+            document.getElementById('accountBalance').value = '';
+        }
+
+        async function refreshSpending() {
+            showMessage('🔄 Refreshing spending data...', 'info');
+            await loadRealSpending();
+        }
+
+        function showMessage(text, type = 'info') {
+            const container = document.getElementById('messageContainer');
+            const message = document.createElement('div');
+            message.className = `message ${type}`;
+            message.textContent = text;
+            
+            container.appendChild(message);
+            
+            setTimeout(() => {
+                if (container.contains(message)) {
+                    container.removeChild(message);
+                }
+            }, 5000);
+        }
+
+        // Initialize App
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('🚀 Initializing Personal Finance App...');
+            
+            showMessage('🔄 Testing database connection...', 'info');
+            const connected = await testConnection();
+            
+            if (connected) {
+                showMessage('✅ Connected to Supabase! Loading data...', 'success');
+                
+                await Promise.all([
+                    loadRealBalance(),
+                    loadRealSpending(),
+                    loadAlerts()
+                ]);
+            } else {
+                showMessage('⚠️ Using demo mode', 'info');
+                
+                const demoBalance = getDemoData('accounts');
+                if (demoBalance.length > 0) {
+                    document.getElementById('totalBalance').textContent = formatEuro(demoBalance[0].balance);
+                }
+                
+                const demoSpending = getDemoData('monthly_spending_formatted');
+                const spendingContainer = document.getElementById('spendingContainer');
+                spendingContainer.innerHTML = demoSpending.map(category => `
+                    <div class="list-item">
+                        <div><span style="margin-right: 8px;">${category.status_icon}</span><strong>${category.category}</strong></div>
+                        <div class="list-amount">${category.spent_formatted} / ${category.budget_formatted}<br><small>(${category.percent_used}%)</small></div>
+                    </div>
+                `).join('');
+                
+                document.getElementById('alertsContainer').innerHTML = `
+                    <div style="padding: 15px; background: rgba(245, 101, 101, 0.15); border-left: 4px solid #f56565; border-radius: 0 8px 8px 0;">
+                        <div style="font-weight: 600; margin-bottom: 5px; color: #f7fafc;">🚨 Budget Alert: Entertainment</div>
+                        <div style="font-size: 0.9rem; color: #cbd5e0;">You've spent €80.00/€80.00 (100%) of your Entertainment budget this month.</div>
+                    </div>
+                `;
+            }
+            
+            console.log('🎉 Personal Finance App ready!');
+        });
+    </script>
+</body>
+</html>
